@@ -66,8 +66,10 @@ class Forms3rdpartyXpost {
 
 
 		// loop through wrapper to "convert" to xml
+		$el = array_shift($wrapper);
+		$body = $this->cheap_xmlify($body, $el);
 		foreach($wrapper as $el) {
-			$body = $this->cheap_xmlify($body, $el);
+			$body = "<$el>$body</$el>";
 		}
 
 		return $args;
@@ -87,7 +89,7 @@ class Forms3rdpartyXpost {
 			}
 			$xml .= "\n";
 		} else {
-			$xml .= $arr;
+			$xml .= htmlspecialchars($arr);
 		}
 
 		if($root) $xml .= "</$root>";
@@ -96,7 +98,7 @@ class Forms3rdpartyXpost {
 	}//--	fn	cheap_xmlify
 
 
-
+	// not used...here just in case
 	public function service_metabox($P, $entity) {
 
 		?>
@@ -138,7 +140,7 @@ class Forms3rdpartyXpost {
 				<?php $field = self::PARAM_HEADER; ?>
 				<div class="field">
 					<label for="<?php echo $field, '-', $eid ?>"><?php _e('Post Headers', $P); ?></label>
-					<input id="<?php echo $field, '-', $eid ?>" type="text" class="text" name="<?php echo $P, '[', $eid, '][', $field, ']'?>" value="<?php echo isset($entity[$field]) ? esc_attr($entity[$field]) : 'post'?>" />
+					<input id="<?php echo $field, '-', $eid ?>" type="text" class="text" name="<?php echo $P, '[', $eid, '][', $field, ']'?>" value="<?php echo isset($entity[$field]) ? esc_attr($entity[$field]) : ''?>" />
 					<em class="description"><?php _e('Override the post headers for all posts.  You may specify more than one by providing in &quot;querystring&quot; format', $P);?> (<code>Accept=json&amp;Content-Type=whatever</code>).</em>
 				</div>
 			</div>
