@@ -41,7 +41,7 @@ class Forms3rdpartyXpost {
 		// scan the post args for meta instructions
 
 		// check for headers in the form of a querystring
-		if(isset($service[self::PARAM_HEADER])) {
+		if( isset($service[self::PARAM_HEADER]) && !empty($service[self::PARAM_HEADER]) ) {
 			parse_str($service[self::PARAM_HEADER], $headers);
 			// do we already have some? merge
 			if(isset($args['headers'])) {
@@ -51,33 +51,13 @@ class Forms3rdpartyXpost {
 				$args['headers'] = $headers;
 			}
 		}
-		// note that per-post mappings will override defaults given in main settings
-		if(isset($body['#' . self::PARAM_HEADER])) {
-			parse_str($body['#' . self::PARAM_HEADER], $headers);
-			// do we already have some? merge
-			if(isset($args['headers'])) {
-				$args['headers'] = array_merge( (array)$args['headers'], $headers );
-			}
-			else {
-				$args['headers'] = $headers;
-			}
-			unset($body['#' . self::PARAM_HEADER]); // remove meta command from post
-		}
-
 
 		// are we sending this form as xml?
-		if( isset($body['#' . self::PARAM_ASXML]) ) {
-			unset($body['#' . self::PARAM_ASXML]); // remove meta command from post
-		}
-		elseif(!isset($service[self::PARAM_ASXML]) || 'true' != $service[self::PARAM_ASXML]) return $args;
+		if(!isset($service[self::PARAM_ASXML]) || 'true' != $service[self::PARAM_ASXML]) return $args;
 
 		
 		// do we have a custom wrapper?
-		if(isset($body['#' . self::PARAM_WRAPPER])) {
-			$wrapper = array_reverse( explode('/', $body['#' . self::PARAM_WRAPPER]) );
-			unset($body['#' . self::PARAM_WRAPPER]); // remove meta command from post
-		}
-		elseif(isset($service[self::PARAM_WRAPPER])) {
+		if(isset($service[self::PARAM_WRAPPER])) {
 			$wrapper = array_reverse( explode('/', $service[self::PARAM_WRAPPER]) );
 		}
 		else {
@@ -142,28 +122,24 @@ class Forms3rdpartyXpost {
 		<fieldset><legend><span><?php _e('Xml Post'); ?></span></legend>
 			<div class="inside">
 				<p class="description"><?php _e('Configure how to transform service post body into XML, and/or set headers.', $P) ?></p>
-				<p class="description"><?php _e('Note: you may also specify these values per service as &quot;special&quot; mapped values -- see each field for instructions.', $P) ?></p>
 
 				<?php $field = self::PARAM_ASXML; ?>
 				<div class="field">
-					<label for="<?php echo $field, '-', $eid ?>"><?php _e('Post all services as XML?', $P); ?></label>
+					<label for="<?php echo $field, '-', $eid ?>"><?php _e('Post service as XML?', $P); ?></label>
 					<input id="<?php echo $field, '-', $eid ?>" type="checkbox" class="checkbox" name="<?php echo $P, '[', $eid, '][', $field, ']'?>" value="true"<?php echo isset($entity[$field]) ? ' checked="checked"' : ''?> />
-					<em class="description"><?php _e('Should all services transform post body to xml?', $P);?> 
-						<?php echo sprintf(__('Note: you can specify this per service with a static field mapping of <code>%s</code>.', $P), '#'.$field); ?></em>
+					<em class="description"><?php _e('Should all services transform post body to xml?', $P);?></em>
 				</div>
 				<?php $field = self::PARAM_WRAPPER; ?>
 				<div class="field">
 					<label for="<?php echo $field, '-', $eid ?>"><?php _e('Xml Root Element(s)', $P); ?></label>
 					<input id="<?php echo $field, '-', $eid ?>" type="text" class="text" name="<?php echo $P, '[', $eid, '][', $field, ']'?>" value="<?php echo isset($entity[$field]) ? esc_attr($entity[$field]) : 'post'?>" />
-					<em class="description"><?php _e('Wrap contents all xml-transformed posts with this root element.  You may specify more than one by separating names with forward-slash', $P);?> (<code>/</code>).  
-						<?php echo sprintf(__('Note: you can specify this per service with a static field mapping of <code>%s</code>.', $P), '#'.$field); ?></em>
+					<em class="description"><?php _e('Wrap contents all xml-transformed posts with this root element.  You may specify more than one by separating names with forward-slash', $P);?> (<code>/</code>).</em>
 				</div>
 				<?php $field = self::PARAM_HEADER; ?>
 				<div class="field">
 					<label for="<?php echo $field, '-', $eid ?>"><?php _e('Post Headers', $P); ?></label>
 					<input id="<?php echo $field, '-', $eid ?>" type="text" class="text" name="<?php echo $P, '[', $eid, '][', $field, ']'?>" value="<?php echo isset($entity[$field]) ? esc_attr($entity[$field]) : 'post'?>" />
-					<em class="description"><?php _e('Override the post headers for all posts.  You may specify more than one by providing in &quot;querystring&quot; format', $P);?> (<code>Accept=json&amp;Content-Type=whatever</code>).  
-						<?php echo sprintf(__('Note: you can specify this per service with a static field mapping of <code>%s</code>.', $P), '#'.$field); ?></em>
+					<em class="description"><?php _e('Override the post headers for all posts.  You may specify more than one by providing in &quot;querystring&quot; format', $P);?> (<code>Accept=json&amp;Content-Type=whatever</code>).</em>
 				</div>
 			</div>
 		</fieldset>
