@@ -1,14 +1,14 @@
-# Forms: 3rd-Party Dynamic Fields #
+# Forms: 3rd-Party Xml Post #
 
-**Contributors:** zaus, skane
+**Contributors:** zaus, leadlogic
 
 **Donate link:** http://drzaus.com/donate
 
-**Tags:** contact form, form, contact form 7, CF7, gravity forms, GF, CRM, mapping, 3rd-party service, services, remote request, dynamic fields, get params
+**Tags:** contact form, form, contact form 7, CF7, gravity forms, GF, CRM, mapping, 3rd-party service, services, remote request, xml, soap, xml webservice, soap webservice
 
 **Requires at least:** 3.0
 
-**Tested up to:** 3.3.1
+**Tested up to:** 3.8
 
 **Stable tag:** trunk
 

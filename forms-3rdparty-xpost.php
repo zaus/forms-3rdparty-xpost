@@ -71,6 +71,8 @@ class Forms3rdpartyXpost {
 		foreach($wrapper as $el) {
 			$body = "<$el>$body</$el>";
 		}
+		// xml header
+		$body = '<?xml version="1.0" encoding="UTF-8"?>' . $body;
 
 		return $args;
 	}//--	fn	post_args
