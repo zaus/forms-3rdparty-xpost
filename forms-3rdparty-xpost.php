@@ -32,11 +32,16 @@ class Forms3rdpartyXpost {
 	const PARAM_HEADER = 'xpost-header';
 	const PARAM_ASXML = 'as-xpost';
 	const PARAM_WRAPPER = 'xpost-wrapper';
+	const PARAM_SEPARATOR = '/';
 
+
+	
 	public function post_args($args, $service, $form) {
 
 		// shorthand
 		$body = &$args['body'];
+		
+		nest(&$body);
 
 		// scan the post args for meta instructions
 
@@ -58,49 +63,69 @@ class Forms3rdpartyXpost {
 		
 		// do we have a custom wrapper?
 		if(isset($service[self::PARAM_WRAPPER])) {
-			$wrapper = array_reverse( explode('/', $service[self::PARAM_WRAPPER]) );
+			$wrapper = array_reverse( explode(PARAM_SEPARATOR, $service[self::PARAM_WRAPPER]) );
 		}
 		else {
 			$wrapper = array('post');
 		}
-
-
-		// loop through wrapper to "convert" to xml
-		$el = array_shift($wrapper);
-		$body = $this->cheap_xmlify($body, $el);
+		
+		// loop through wrapper to wrap
+		$root = array_pop($wrapper); // save terminal wrapper as root
 		foreach($wrapper as $el) {
-			$body = "<$el>$body</$el>";
+			$body = array($el => $body);
 		}
-		// xml header
-		$body = '<?xml version="1.0" encoding="UTF-8"?>' . $body;
-
+		$body = $this->simple_xmlify($body, null, $root)->asXML();
+		
 		return $args;
 	}//--	fn	post_args
 
 
-	function cheap_xmlify($arr, $root = 'x', $d = 0) {
+	function nest($body) {
+		// scan body to turn depth-2 into nested depth-n list
+		foreach($body as $k => $v) {
+			if(-1 === strpos($k, PARAM_SEPARATOR)) continue;
+		
+			// remove original
+			unset($body[$k]);
+		
+			// split and attach
+			$els = explode(PARAM_SEPARATOR, $k);
+			$nest = &$body;
+		
+			foreach($els as $e) {
+				if(!isset($nest[$e])) $nest[$e] = array();
+				$nest = &$nest[$e];
+			}
+			$nest = $v;
+		}
+	
+		return $body;
+	}//--	fn	nest
+	
+	function simple_xmlify($arr, SimpleXMLElement $root = null, $el = 'x') {
 		// could use instead http://stackoverflow.com/a/1397164/1037948
-		$xml = '';
-		$tab = "\n" . str_repeat("\t", $d+1);
-
-		if($root) $xml .= "<$root>";
+	
+		if(!isset($root) || null == $root) $root = new SimpleXMLElement('<' . $el . '/>');
 
 		if(is_array($arr)) {
 			foreach($arr as $k => $v) {
-				$xml .= $tab . self::cheap_xmlify($v, $k, $d+1);
+				// special: attributes
+				if(is_string($k) && $k[0] == '@') $root->addAttribute(substr($k, 1),$v);
+				// normal: append
+				else simple_xmlify($v, $root->addChild(
+						// fix 'invalid xml name' by prefixing numeric keys
+						is_numeric($k) ? 'n' . $k : $k)
+					);
 			}
-			$xml .= "\n";
 		} else {
-			$xml .= htmlspecialchars($arr);
+			$root[0] = $arr;
 		}
 
-		if($root) $xml .= "</$root>";
-
-		return $xml;
-	}//--	fn	cheap_xmlify
+		return $root;
+	}//--	fn	simple_xmlify
 
 
-	// not used...here just in case
+	// not used...here just in case we want inline help
 	public function service_metabox($P, $entity) {
 
 		?>
