@@ -55,12 +55,12 @@ would be given as
 
 Separate element names within the same 3rdparty field mapping using `/`, so that in order to make:
 
-    <credentials>
+    <credentials type="123">
         <user>xyz</user>
         <pass>abc</pass>
     </credentials>
 
-you would use `credentials/user` and `credentials/pass`, respectively.
+you would use `credentials/@type`, `credentials/user` and `credentials/pass`, respectively.
 
 == Screenshots ==
 
