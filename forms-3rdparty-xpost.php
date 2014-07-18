@@ -5,10 +5,11 @@ Plugin Name: Forms-3rdparty Xml Post
 Plugin URI: https://github.com/zaus/forms-3rdparty-xpost
 Description: Converts submission from <a href="http://wordpress.org/plugins/forms-3rdparty-integration/">Forms 3rdparty Integration</a> to xml, add headers
 Author: zaus, leadlogic
-Version: 0.1
+Version: 0.2
 Author URI: http://drzaus.com
 Changelog:
 	0.1 init
+	0.2 nesting
 */
 
 
