@@ -5,10 +5,11 @@ Plugin Name: Forms-3rdparty Xml Post
 Plugin URI: https://github.com/zaus/forms-3rdparty-xpost
 Description: Converts submission from <a href="http://wordpress.org/plugins/forms-3rdparty-integration/">Forms 3rdparty Integration</a> to xml, add headers
 Author: zaus, leadlogic
-Version: 0.1
+Version: 0.2
 Author URI: http://drzaus.com
 Changelog:
 	0.1 init
+	0.2 nesting
 */
 
 
@@ -32,11 +33,11 @@ class Forms3rdpartyXpost {
 	const PARAM_HEADER = 'xpost-header';
 	const PARAM_ASXML = 'as-xpost';
 	const PARAM_WRAPPER = 'xpost-wrapper';
+	const PARAM_SEPARATOR = '/';
 
+
+	
 	public function post_args($args, $service, $form) {
-
-		// shorthand
-		$body = &$args['body'];
 
 		// scan the post args for meta instructions
 
@@ -55,52 +56,84 @@ class Forms3rdpartyXpost {
 		// are we sending this form as xml?
 		if(!isset($service[self::PARAM_ASXML]) || 'true' != $service[self::PARAM_ASXML]) return $args;
 
+		// nest tags
+		$args['body'] = $this->nest($args['body']);
+
+		// shorthand
+		$body = &$args['body'];
+		
+		### _log('post-args nested', $body);
 		
 		// do we have a custom wrapper?
 		if(isset($service[self::PARAM_WRAPPER])) {
-			$wrapper = array_reverse( explode('/', $service[self::PARAM_WRAPPER]) );
+			$wrapper = array_reverse( explode(self::PARAM_SEPARATOR, $service[self::PARAM_WRAPPER]) );
 		}
 		else {
 			$wrapper = array('post');
 		}
-
-
-		// loop through wrapper to "convert" to xml
-		$el = array_shift($wrapper);
-		$body = $this->cheap_xmlify($body, $el);
+		
+		// loop through wrapper to wrap
+		$root = array_pop($wrapper); // save terminal wrapper as root
 		foreach($wrapper as $el) {
-			$body = "<$el>$body</$el>";
+			$body = array($el => $body);
 		}
-		// xml header
-		$body = '<?xml version="1.0" encoding="UTF-8"?>' . $body;
+		$body = $this->simple_xmlify($body, null, $root)->asXML();
+		
+		### _log('xmlified body', $body, 'args', $args);
 
 		return $args;
 	}//--	fn	post_args
 
 
-	function cheap_xmlify($arr, $root = 'x', $d = 0) {
-		// could use instead http://stackoverflow.com/a/1397164/1037948
-		$xml = '';
-		$tab = "\n" . str_repeat("\t", $d+1);
+	function nest($body) {
+		// scan body to turn depth-2 into nested depth-n list
+		// need a new target so we can enumerate the original
+		$nest = array();
 
-		if($root) $xml .= "<$root>";
+		foreach($body as $k => $v) {
+			if(false === strpos($k, self::PARAM_SEPARATOR)) continue;
+		
+			// remove original
+			unset($body[$k]);
+		
+			// split, reverse, and russian-doll the values for each el
+			$els = array_reverse(explode(self::PARAM_SEPARATOR, $k));
+
+			foreach($els as $e) {
+				$v = array($e => $v);
+			}
+
+			// attach to new result so we don't dirty the enumerator
+			$nest = array_merge_recursive($nest, $v);
+		}
+	
+		return array_merge($nest, $body);
+	}//--	fn	nest
+	
+	function simple_xmlify($arr, SimpleXMLElement $root = null, $el = 'x') {
+		// could use instead http://stackoverflow.com/a/1397164/1037948
+	
+		if(!isset($root) || null == $root) $root = new SimpleXMLElement('<' . $el . '/>');
 
 		if(is_array($arr)) {
 			foreach($arr as $k => $v) {
-				$xml .= $tab . self::cheap_xmlify($v, $k, $d+1);
+				// special: attributes
+				if(is_string($k) && $k[0] == '@') $root->addAttribute(substr($k, 1),$v);
+				// normal: append
+				else $this->simple_xmlify($v, $root->addChild(
+						// fix 'invalid xml name' by prefixing numeric keys
+						is_numeric($k) ? 'n' . $k : $k)
+					);
 			}
-			$xml .= "\n";
 		} else {
-			$xml .= htmlspecialchars($arr);
+			$root[0] = $arr;
 		}
 
-		if($root) $xml .= "</$root>";
-
-		return $xml;
-	}//--	fn	cheap_xmlify
+		return $root;
+	}//--	fn	simple_xmlify
 
 
-	// not used...here just in case
+	// not used...here just in case we want inline help
 	public function service_metabox($P, $entity) {
 
 		?>
