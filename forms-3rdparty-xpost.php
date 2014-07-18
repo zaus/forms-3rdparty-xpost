@@ -39,11 +39,6 @@ class Forms3rdpartyXpost {
 	
 	public function post_args($args, $service, $form) {
 
-		// shorthand
-		$body = &$args['body'];
-		
-		nest(&$body);
-
 		// scan the post args for meta instructions
 
 		// check for headers in the form of a querystring
@@ -61,10 +56,17 @@ class Forms3rdpartyXpost {
 		// are we sending this form as xml?
 		if(!isset($service[self::PARAM_ASXML]) || 'true' != $service[self::PARAM_ASXML]) return $args;
 
+		// nest tags
+		$args['body'] = $this->nest($args['body']);
+
+		// shorthand
+		$body = &$args['body'];
+		
+		### _log('post-args nested', $body);
 		
 		// do we have a custom wrapper?
 		if(isset($service[self::PARAM_WRAPPER])) {
-			$wrapper = array_reverse( explode(PARAM_SEPARATOR, $service[self::PARAM_WRAPPER]) );
+			$wrapper = array_reverse( explode(self::PARAM_SEPARATOR, $service[self::PARAM_WRAPPER]) );
 		}
 		else {
 			$wrapper = array('post');
@@ -77,30 +79,35 @@ class Forms3rdpartyXpost {
 		}
 		$body = $this->simple_xmlify($body, null, $root)->asXML();
 		
+		### _log('xmlified body', $body, 'args', $args);
+
 		return $args;
 	}//--	fn	post_args
 
 
 	function nest($body) {
 		// scan body to turn depth-2 into nested depth-n list
+		// need a new target so we can enumerate the original
+		$nest = array();
+
 		foreach($body as $k => $v) {
-			if(-1 === strpos($k, PARAM_SEPARATOR)) continue;
+			if(false === strpos($k, self::PARAM_SEPARATOR)) continue;
 		
 			// remove original
 			unset($body[$k]);
 		
-			// split and attach
-			$els = explode(PARAM_SEPARATOR, $k);
-			$nest = &$body;
-		
+			// split, reverse, and russian-doll the values for each el
+			$els = array_reverse(explode(self::PARAM_SEPARATOR, $k));
+
 			foreach($els as $e) {
-				if(!isset($nest[$e])) $nest[$e] = array();
-				$nest = &$nest[$e];
+				$v = array($e => $v);
 			}
-			$nest = $v;
+
+			// attach to new result so we don't dirty the enumerator
+			$nest = array_merge_recursive($nest, $v);
 		}
 	
-		return $body;
+		return array_merge($nest, $body);
 	}//--	fn	nest
 	
 	function simple_xmlify($arr, SimpleXMLElement $root = null, $el = 'x') {
@@ -113,7 +120,7 @@ class Forms3rdpartyXpost {
 				// special: attributes
 				if(is_string($k) && $k[0] == '@') $root->addAttribute(substr($k, 1),$v);
 				// normal: append
-				else simple_xmlify($v, $root->addChild(
+				else $this->simple_xmlify($v, $root->addChild(
 						// fix 'invalid xml name' by prefixing numeric keys
 						is_numeric($k) ? 'n' . $k : $k)
 					);
