@@ -11,9 +11,9 @@ Converts submission from <a href="http://wordpress.org/plugins/forms-3rdparty-in
 
 == Description ==
 
-Converts external submission from [Forms: 3rdparty Integration](http://wordpress.org/plugins/forms-3rdparty-integration/) plugin to an XML post; optionally can add custom headers (to allow SOAP submissions) or transform separate fields into nested values.
+Converts external submission from [Forms: 3rdparty Integration](http://wordpress.org/plugins/forms-3rdparty-integration/) plugin to an XML post; optionally can add custom headers (to allow SOAP submissions) or transform/combine separate fields into nested values.
 
-This plugin will turn the 3rdparty mappings into XML elements, so that each form post will be the value (or attribute) of an XML element.
+This plugin can turn the 3rdparty mappings into XML elements, so that each form post will be the value (or attribute) of an XML element.
 
 == Installation ==
 
