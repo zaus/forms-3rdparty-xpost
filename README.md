@@ -81,6 +81,9 @@ __None available.__
 
 ## Changelog ##
 
+### 0.3 ###
+Can nest regular post fields even when not submitting XML.
+
 ### 0.2 ###
 * Element nesting, attributes
 * reworked "xmlify" using recursive `SimpleXMLElement`
