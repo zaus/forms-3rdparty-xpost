@@ -5,7 +5,7 @@ Plugin Name: Forms-3rdparty Xml Post
 Plugin URI: https://github.com/zaus/forms-3rdparty-xpost
 Description: Converts submission from <a href="http://wordpress.org/plugins/forms-3rdparty-integration/">Forms 3rdparty Integration</a> to xml, add headers
 Author: zaus, leadlogic
-Version: 0.3
+Version: 0.3.1
 Author URI: http://drzaus.com
 Changelog:
 	0.1 init
@@ -69,19 +69,21 @@ class Forms3rdpartyXpost {
 		
 		// loop through wrapper to wrap
 		$root = array_pop($wrapper); // save terminal wrapper as root
-		foreach($wrapper as $el) {
+		if(!empty($wrapper)) foreach($wrapper as $el) {
 			$args['body'] = array($el => $args['body']);
 		}
 
 		// are we sending this form as xml?
 		if(isset($service[self::PARAM_ASXML]) && 'true' == $service[self::PARAM_ASXML])
 			$args['body'] = $this->simple_xmlify($args['body'], null, $root)->asXML();
-		else $args['body'] = array($root => $args['body']);
+		else if(isset($service[self::PARAM_WRAPPER]) && !empty($service[self::PARAM_WRAPPER]))
+			$args['body'] = array($root => $args['body']);
 		
 		### _log('xmlified body', $body, 'args', $args);
 
 		return $args;
 	}//--	fn	post_args
+
 
 
 	function nest($body) {
