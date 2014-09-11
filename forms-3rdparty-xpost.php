@@ -57,9 +57,6 @@ class Forms3rdpartyXpost {
 		// nest tags
 		$args['body'] = $this->nest($args['body']);
 
-		// shorthand
-		$body = &$args['body'];
-		
 		### _log('post-args nested', $body);
 		
 		// do we have a custom wrapper?
@@ -73,12 +70,13 @@ class Forms3rdpartyXpost {
 		// loop through wrapper to wrap
 		$root = array_pop($wrapper); // save terminal wrapper as root
 		foreach($wrapper as $el) {
-			$body = array($el => $body);
+			$args['body'] = array($el => $args['body']);
 		}
 
 		// are we sending this form as xml?
-		if(isset($service[self::PARAM_ASXML]) || 'true' == $service[self::PARAM_ASXML])
-			$body = $this->simple_xmlify($body, null, $root)->asXML();
+		if(isset($service[self::PARAM_ASXML]) && 'true' == $service[self::PARAM_ASXML])
+			$args['body'] = $this->simple_xmlify($args['body'], null, $root)->asXML();
+		else $args['body'] = array($root => $args['body']);
 		
 		### _log('xmlified body', $body, 'args', $args);
 
