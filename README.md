@@ -4,7 +4,7 @@
 
 **Donate link:** http://drzaus.com/donate
 
-**Tags:** contact form, form, contact form 7, CF7, gravity forms, GF, CRM, mapping, 3rd-party service, services, remote request, xml, soap, xml webservice, soap webservice
+**Tags:** contact form, form, contact form 7, CF7, gravity forms, GF, CRM, mapping, 3rd-party service, services, remote request, xml, soap, xml webservice, soap webservice, nested fields
 
 **Requires at least:** 3.0
 
@@ -14,11 +14,11 @@
 
 **License:** GPLv2 or later
 
-Converts submission from [Forms 3rdparty Integration](http://wordpress.org/plugins/forms-3rdparty-integration/) to xml, add headers.
+Converts submission from [Forms 3rdparty Integration](http://wordpress.org/plugins/forms-3rdparty-integration/) to xml, add headers, or nest fields.
 
 ## Description ##
 
-Converts external submission from [Forms: 3rdparty Integration](http://wordpress.org/plugins/forms-3rdparty-integration/) plugin to XML post; optionally can add custom headers (to allow SOAP submissions).
+Converts external submission from [Forms: 3rdparty Integration](http://wordpress.org/plugins/forms-3rdparty-integration/) plugin to XML post; optionally can add custom headers (to allow SOAP submissions) or transform separate fields into nested values.
 
 This plugin will turn the 3rdparty mappings into XML elements, so that each form post will be the value (or attribute) of an XML element.
 
@@ -70,6 +70,10 @@ Separate element names within the same 3rdparty field mapping using `/`, so that
     </credentials>
 
 you would use `credentials/@type`, `credentials/user` and `credentials/pass`, respectively.
+
+**Note:** You may nest and wrap elements even if not transforming into XML; they will be submitted as multi-dimensional arrays like:
+
+    credentials[@type]=123&credentials[user]=xyz&credentials[pass]=abc
 
 ## Screenshots ##
 

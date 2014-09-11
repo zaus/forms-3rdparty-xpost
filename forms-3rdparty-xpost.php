@@ -5,11 +5,12 @@ Plugin Name: Forms-3rdparty Xml Post
 Plugin URI: https://github.com/zaus/forms-3rdparty-xpost
 Description: Converts submission from <a href="http://wordpress.org/plugins/forms-3rdparty-integration/">Forms 3rdparty Integration</a> to xml, add headers
 Author: zaus, leadlogic
-Version: 0.2
+Version: 0.3
 Author URI: http://drzaus.com
 Changelog:
 	0.1 init
 	0.2 nesting
+	0.3 doesn't need to be xml to nest, wrap
 */
 
 
@@ -53,9 +54,6 @@ class Forms3rdpartyXpost {
 			}
 		}
 
-		// are we sending this form as xml?
-		if(!isset($service[self::PARAM_ASXML]) || 'true' != $service[self::PARAM_ASXML]) return $args;
-
 		// nest tags
 		$args['body'] = $this->nest($args['body']);
 
@@ -77,7 +75,10 @@ class Forms3rdpartyXpost {
 		foreach($wrapper as $el) {
 			$body = array($el => $body);
 		}
-		$body = $this->simple_xmlify($body, null, $root)->asXML();
+
+		// are we sending this form as xml?
+		if(isset($service[self::PARAM_ASXML]) || 'true' == $service[self::PARAM_ASXML])
+			$body = $this->simple_xmlify($body, null, $root)->asXML();
 		
 		### _log('xmlified body', $body, 'args', $args);
 
