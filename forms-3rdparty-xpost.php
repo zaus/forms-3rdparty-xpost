@@ -73,38 +73,42 @@ class Forms3rdpartyXpost {
 		// are we sending this form as xml?
 		// make sure to check in either case if $root was set which,
 		// if you're sending XML, should be -- otherwise it doesn't make much sense as default post
-		if(isset($service[self::PARAM_ASXML]))
-		switch($service[self::PARAM_ASXML]) {
-			// retain legacy < 0.4.2 support for original value ('true') vs desired 'xml'
-			case 'true':
-			case 'xml':
-				$args['body'] = $this->simple_xmlify($args['body'], null, isset($root) ? $root : 'post')->asXML();
-				break;
-			case 'json':
-				if(isset($root))
-					$args['body'] = array($root => $args['body']);
-				
-				// just in case...although they pretty much need php 5.3 anyway
-				if(function_exists('json_encode')) {
-					$args['body'] = json_encode($args['body']);
-				}
-				break;
-			default:
-				if(isset($root))
-					$args['body'] = array($root => $args['body']);
-				break;
-		}
+		if(isset($service[self::PARAM_ASXML])) {
+			$format = $service[self::PARAM_ASXML];
+
+			switch($format) {
+				// retain legacy < 0.4.2 support for original value ('true') vs desired 'xml'
+				case 'true':
+					$format = 'xml'; // correct so consolidated handling below works
+				case 'xml':
+					$args['body'] = $this->simple_xmlify($args['body'], null, isset($root) ? $root : 'post')->asXML();
+					break;
+				case 'json':
+					if(isset($root))
+						$args['body'] = array($root => $args['body']);
+					
+					// just in case...although they pretty much need php 5.3 anyway
+					if(function_exists('json_encode')) {
+						$args['body'] = json_encode($args['body']);
+					}
+					break;
+				default:
+					if(isset($root))
+						$args['body'] = array($root => $args['body']);
+					break;
+			}
+
+			// also set appropriate headers if not already
+			switch($format) {
+				case 'xml':
+				case 'json':
+					if(!isset($args['headers'])) $args['headers'] = array();
+					if(!isset($args['headers']['Content-Type'])) $args['headers']['Content-Type'] = 'application/' . $format;
+					break;
+			}
+
+		}//	if isset service paramxml
 		
-		// also set appropriate headers if not already
-		switch($service[self::PARAM_ASXML]) {
-			// retain legacy < 0.4.2 support for original value ('true') vs desired 'xml'
-			case 'true':
-			case 'xml':
-			case 'json':
-				if(!isset($args['headers'])) $args['headers'] = array();
-				if(!isset($args['headers']['Content-Type'])) $args['headers']['Content-Type'] = 'application/' . $service[self::PARAM_ASXML];
-				break;
-		}
 
 		### _log('xmlified body', $body, 'args', $args);
 
