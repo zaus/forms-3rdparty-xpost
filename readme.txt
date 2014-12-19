@@ -3,7 +3,7 @@ Contributors: zaus, leadlogic
 Donate link: http://drzaus.com/donate
 Tags: contact form, form, contact form 7, CF7, gravity forms, GF, CRM, mapping, 3rd-party service, services, remote request, xml, soap, xml webservice, soap webservice, nested fields
 Requires at least: 3.0
-Tested up to: 3.8
+Tested up to: 4.1
 Stable tag: trunk
 License: GPLv2 or later
 
@@ -74,6 +74,7 @@ __None available.__
 
 = 0.4 =
 Fixed GitHub issue #3 https://github.com/zaus/forms-3rdparty-xpost/issues/3:
+
 * each plugin setting is only applied to that specific service if it has a value
 * removed default `post` wrapper unless sending as xml (and if you send XML you should specify a wrapper)
 

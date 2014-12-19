@@ -8,7 +8,7 @@
 
 **Requires at least:** 3.0
 
-**Tested up to:** 3.8
+**Tested up to:** 4.1
 
 **Stable tag:** trunk
 
@@ -83,6 +83,7 @@ __None available.__
 
 ### 0.4 ###
 Fixed GitHub issue #3 https://github.com/zaus/forms-3rdparty-xpost/issues/3:
+
 * each plugin setting is only applied to that specific service if it has a value
 * removed default `post` wrapper unless sending as xml (and if you send XML you should specify a wrapper)
 
