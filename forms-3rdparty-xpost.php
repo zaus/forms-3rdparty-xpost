@@ -194,7 +194,7 @@ class Forms3rdpartyXpost {
 					<label for="<?php echo $field, '-', $eid ?>"><?php _e('Post service format:', $P); ?></label>
 					<select id="<?php echo $field, '-', $eid ?>" class="select" name="<?php echo $P, '[', $eid, '][', $field, ']'?>">
 						<?php foreach($this->get_formats() as $val => $lbl) : ?>
-							<option value="<?php echo esc_attr($val); selected($entity[$field], $val) ?>"><?php _e($lbl, $P) ?></option>
+							<option value="<?php echo esc_attr($val), '"'; selected($entity[$field], $val) ?>><?php _e($lbl, $P) ?></option>
 						<?php endforeach ?>
 					</select>
 					<em class="description"><?php _e('Should service transform post body to json or xml?  Default is "form" (unchanged).', $P);?></em>
