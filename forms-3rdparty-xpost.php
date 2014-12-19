@@ -12,7 +12,7 @@ Changelog:
 	0.2 nesting
 	0.3 doesn't need to be xml to nest, wrap
 	0.4 fix per github issue #3
-	0.4.3 post json
+	0.4.3 post json + content-type defaults
 */
 
 
@@ -79,9 +79,6 @@ class Forms3rdpartyXpost {
 			case 'true':
 			case 'xml':
 				$args['body'] = $this->simple_xmlify($args['body'], null, isset($root) ? $root : 'post')->asXML();
-				// also set appropriate headers if not already
-				if(!isset($args['headers'])) $args['headers'] = array();
-				elseif(!isset($args['headers']['Content-Type'])) $args['headers']['Content-Type'] = 'application/xml';
 				break;
 			case 'json':
 				if(isset($root))
@@ -90,10 +87,6 @@ class Forms3rdpartyXpost {
 				// just in case...although they pretty much need php 5.3 anyway
 				if(function_exists('json_encode')) {
 					$args['body'] = json_encode($args['body']);
-
-					// also set appropriate headers if not already
-					if(!isset($args['headers'])) $args['headers'] = array();
-					elseif(!isset($args['headers']['Content-Type'])) $args['headers']['Content-Type'] = 'application/json';
 				}
 				break;
 			default:
@@ -102,6 +95,17 @@ class Forms3rdpartyXpost {
 				break;
 		}
 		
+		// also set appropriate headers if not already
+		switch($service[self::PARAM_ASXML]) {
+			// retain legacy < 0.4.2 support for original value ('true') vs desired 'xml'
+			case 'true':
+			case 'xml':
+			case 'json':
+				if(!isset($args['headers'])) $args['headers'] = array();
+				if(!isset($args['headers']['Content-Type'])) $args['headers']['Content-Type'] = 'application/' . $service[self::PARAM_ASXML];
+				break;
+		}
+
 		### _log('xmlified body', $body, 'args', $args);
 
 		// don't need to wrap with filter -- user can just hook to same forms-integration filter with lower priority
