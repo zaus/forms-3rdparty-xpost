@@ -4,7 +4,7 @@
 
 **Donate link:** http://drzaus.com/donate
 
-**Tags:** contact form, form, contact form 7, CF7, gravity forms, GF, CRM, mapping, 3rd-party service, services, remote request, xml, soap, xml webservice, soap webservice, nested fields
+**Tags:** contact form, form, contact form 7, CF7, gravity forms, GF, CRM, mapping, 3rd-party service, services, remote request, xml, json, soap, xml webservice, soap webservice, json webservice, nested fields
 
 **Requires at least:** 3.0
 
@@ -14,11 +14,11 @@
 
 **License:** GPLv2 or later
 
-Converts submission from [Forms 3rdparty Integration](http://wordpress.org/plugins/forms-3rdparty-integration/) to xml, add headers, or nest fields.
+Converts submission from [Forms 3rdparty Integration](http://wordpress.org/plugins/forms-3rdparty-integration/) to xml/json, add headers, or nest fields.
 
 ## Description ##
 
-Converts external submission from [Forms: 3rdparty Integration](http://wordpress.org/plugins/forms-3rdparty-integration/) plugin to XML post; optionally can add custom headers (to allow SOAP submissions) or transform/combine separate fields into nested values.
+Converts external submission from [Forms: 3rdparty Integration](http://wordpress.org/plugins/forms-3rdparty-integration/) plugin to XML or JSON post; optionally can add custom headers (to allow SOAP submissions) or transform/combine separate fields into nested values.
 
 This plugin will turn the 3rdparty mappings into XML elements, so that each form post will be the value (or attribute) of an XML element.
 
@@ -80,6 +80,9 @@ you would use `credentials/@type`, `credentials/user` and `credentials/pass`, re
 __None available.__
 
 ## Changelog ##
+
+### 0.4.2 ###
+Can post body as json instead
 
 ### 0.4 ###
 Fixed GitHub issue #3 https://github.com/zaus/forms-3rdparty-xpost/issues/3:

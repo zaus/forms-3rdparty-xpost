@@ -3,9 +3,9 @@
 
 Plugin Name: Forms-3rdparty Xml Post
 Plugin URI: https://github.com/zaus/forms-3rdparty-xpost
-Description: Converts submission from <a href="http://wordpress.org/plugins/forms-3rdparty-integration/">Forms 3rdparty Integration</a> to xml, add headers
+Description: Converts submission from <a href="http://wordpress.org/plugins/forms-3rdparty-integration/">Forms 3rdparty Integration</a> to xml, json, add headers
 Author: zaus, leadlogic
-Version: 0.4.1
+Version: 0.4.2
 Author URI: http://drzaus.com
 Changelog:
 	0.1 init
@@ -73,10 +73,26 @@ class Forms3rdpartyXpost {
 		// are we sending this form as xml?
 		// make sure to check in either case if $root was set which,
 		// if you're sending XML, should be -- otherwise it doesn't make much sense as default post
-		if(isset($service[self::PARAM_ASXML]) && 'true' == $service[self::PARAM_ASXML])
-			$args['body'] = $this->simple_xmlify($args['body'], null, isset($root) ? $root : 'post')->asXML();
-		else if(isset($root))
-			$args['body'] = array($root => $args['body']);
+		if(isset($service[self::PARAM_ASXML]))
+		switch($service[self::PARAM_ASXML]) {
+			// retain legacy < 0.4.2 support for original value ('true') vs desired 'xml'
+			case 'true':
+			case 'xml':
+				$args['body'] = $this->simple_xmlify($args['body'], null, isset($root) ? $root : 'post')->asXML();
+				break;
+			case 'json':
+				if(isset($root))
+					$args['body'] = array($root => $args['body']);
+				
+				// just in case...although they pretty much need php 5.3 anyway
+				if(function_exists('json_encode'))
+					$args['body'] = json_encode($args['body']);
+				break;
+			default:
+				if(isset($root))
+					$args['body'] = array($root => $args['body']);
+				break;
+		}
 		
 		### _log('xmlified body', $body, 'args', $args);
 
@@ -154,6 +170,18 @@ class Forms3rdpartyXpost {
 
 	}//--	fn	service_metabox
 
+	/**
+	 * Get the list of formats for dropdown as value/label
+	 */
+	private function get_formats() {
+		return array(
+				'form' => 'Form',
+				/* key should be 'xml', but 'true' for legacy support */
+				'true' => 'XML',
+				'json' => 'JSON'
+			);
+	}
+
 	public function service_settings($eid, $P, $entity) {
 		?>
 		<fieldset><legend><span><?php _e('Xml Post'); ?></span></legend>
@@ -163,9 +191,13 @@ class Forms3rdpartyXpost {
 
 				<?php $field = self::PARAM_ASXML; ?>
 				<div class="field">
-					<label for="<?php echo $field, '-', $eid ?>"><?php _e('Post service as XML?', $P); ?></label>
-					<input id="<?php echo $field, '-', $eid ?>" type="checkbox" class="checkbox" name="<?php echo $P, '[', $eid, '][', $field, ']'?>" value="true"<?php echo isset($entity[$field]) ? ' checked="checked"' : ''?> />
-					<em class="description"><?php _e('Should all services transform post body to xml?', $P);?></em>
+					<label for="<?php echo $field, '-', $eid ?>"><?php _e('Post service format:', $P); ?></label>
+					<select id="<?php echo $field, '-', $eid ?>" class="select" name="<?php echo $P, '[', $eid, '][', $field, ']'?>">
+						<?php foreach($this->get_formats() as $val => $lbl) : ?>
+							<option value="<?php echo esc_attr($val); selected($entity[$field], $val) ?>"><?php _e($lbl, $P) ?></option>
+						<?php endforeach ?>
+					</select>
+					<em class="description"><?php _e('Should service transform post body to json or xml?  Default is "form" (unchanged).', $P);?></em>
 				</div>
 				<?php $field = self::PARAM_WRAPPER; ?>
 				<div class="field">
