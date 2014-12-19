@@ -5,13 +5,14 @@ Plugin Name: Forms-3rdparty Xml Post
 Plugin URI: https://github.com/zaus/forms-3rdparty-xpost
 Description: Converts submission from <a href="http://wordpress.org/plugins/forms-3rdparty-integration/">Forms 3rdparty Integration</a> to xml, json, add headers
 Author: zaus, leadlogic
-Version: 0.4.2
+Version: 0.4.3
 Author URI: http://drzaus.com
 Changelog:
 	0.1 init
 	0.2 nesting
 	0.3 doesn't need to be xml to nest, wrap
 	0.4 fix per github issue #3
+	0.4.3 post json
 */
 
 
@@ -38,7 +39,6 @@ class Forms3rdpartyXpost {
 	const PARAM_SEPARATOR = '/';
 
 
-	
 	public function post_args($args, $service, $form) {
 
 		// scan the post args for meta instructions
@@ -79,14 +79,22 @@ class Forms3rdpartyXpost {
 			case 'true':
 			case 'xml':
 				$args['body'] = $this->simple_xmlify($args['body'], null, isset($root) ? $root : 'post')->asXML();
+				// also set appropriate headers if not already
+				if(!isset($args['headers'])) $args['headers'] = array();
+				elseif(!isset($args['headers']['Content-Type'])) $args['headers']['Content-Type'] = 'application/xml';
 				break;
 			case 'json':
 				if(isset($root))
 					$args['body'] = array($root => $args['body']);
 				
 				// just in case...although they pretty much need php 5.3 anyway
-				if(function_exists('json_encode'))
+				if(function_exists('json_encode')) {
 					$args['body'] = json_encode($args['body']);
+
+					// also set appropriate headers if not already
+					if(!isset($args['headers'])) $args['headers'] = array();
+					elseif(!isset($args['headers']['Content-Type'])) $args['headers']['Content-Type'] = 'application/json';
+				}
 				break;
 			default:
 				if(isset($root))
@@ -96,6 +104,7 @@ class Forms3rdpartyXpost {
 		
 		### _log('xmlified body', $body, 'args', $args);
 
+		// don't need to wrap with filter -- user can just hook to same forms-integration filter with lower priority
 		return $args;
 	}//--	fn	post_args
 
