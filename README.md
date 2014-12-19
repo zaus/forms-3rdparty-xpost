@@ -81,6 +81,11 @@ __None available.__
 
 ## Changelog ##
 
+### 0.4 ###
+Fixed GitHub issue #3 https://github.com/zaus/forms-3rdparty-xpost/issues/3:
+* each plugin setting is only applied to that specific service if it has a value
+* removed default `post` wrapper unless sending as xml (and if you send XML you should specify a wrapper)
+
 ### 0.3 ###
 Can nest regular post fields even when not submitting XML.
 
