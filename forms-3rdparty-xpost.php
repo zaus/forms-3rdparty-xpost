@@ -60,23 +60,21 @@ class Forms3rdpartyXpost {
 		### _log('post-args nested', $body);
 		
 		// do we have a custom wrapper?
-		if(isset($service[self::PARAM_WRAPPER])) {
+		if(isset($service[self::PARAM_WRAPPER]) && !empty($service[self::PARAM_WRAPPER])) {
 			$wrapper = array_reverse( explode(self::PARAM_SEPARATOR, $service[self::PARAM_WRAPPER]) );
-		}
-		else {
-			$wrapper = array('post');
-		}
-		
-		// loop through wrapper to wrap
-		$root = array_pop($wrapper); // save terminal wrapper as root
-		if(!empty($wrapper)) foreach($wrapper as $el) {
-			$args['body'] = array($el => $args['body']);
+			// loop through wrapper to wrap
+			$root = array_pop($wrapper); // save terminal wrapper as root for xmlifying
+			if(!empty($wrapper)) foreach($wrapper as $el) {
+				$args['body'] = array($el => $args['body']);
+			}
 		}
 
 		// are we sending this form as xml?
+		// make sure to check in either case if $root was set which,
+		// if you're sending XML, should be -- otherwise it doesn't make much sense as default post
 		if(isset($service[self::PARAM_ASXML]) && 'true' == $service[self::PARAM_ASXML])
-			$args['body'] = $this->simple_xmlify($args['body'], null, $root)->asXML();
-		else if(isset($service[self::PARAM_WRAPPER]) && !empty($service[self::PARAM_WRAPPER]))
+			$args['body'] = $this->simple_xmlify($args['body'], null, isset($root) ? $root : 'post')->asXML();
+		else if(isset($root))
 			$args['body'] = array($root => $args['body']);
 		
 		### _log('xmlified body', $body, 'args', $args);
@@ -113,7 +111,7 @@ class Forms3rdpartyXpost {
 	
 	function simple_xmlify($arr, SimpleXMLElement $root = null, $el = 'x') {
 		// could use instead http://stackoverflow.com/a/1397164/1037948
-	
+
 		if(!isset($root) || null == $root) $root = new SimpleXMLElement('<' . $el . '/>');
 
 		if(is_array($arr)) {
@@ -160,6 +158,7 @@ class Forms3rdpartyXpost {
 		<fieldset><legend><span><?php _e('Xml Post'); ?></span></legend>
 			<div class="inside">
 				<p class="description"><?php _e('Configure how to transform service post body into XML, and/or set headers.', $P) ?></p>
+				<p class="description"><?php _e('Leave any field blank to ignore it.', $P) ?></p>
 
 				<?php $field = self::PARAM_ASXML; ?>
 				<div class="field">
