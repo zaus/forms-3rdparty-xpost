@@ -75,11 +75,20 @@ you would use `credentials/@type`, `credentials/user` and `credentials/pass`, re
 
     credentials[@type]=123&credentials[user]=xyz&credentials[pass]=abc
 
+### How do I set xml prolog attributes? ###
+
+Just enter the entire root xml in the field, a la http://stackoverflow.com/questions/5992268/simplexml-how-to-correctly-set-encoding-and-xmins
+
 ## Screenshots ##
 
 __None available.__
 
 ## Changelog ##
+
+### 0.5 ###
+* Added URL-style formatting per GitHub issue #6 https://github.com/zaus/forms-3rdparty-xpost/issues/6
+* Added xml prolog/root workaround per GitHub issue #8 https://github.com/zaus/forms-3rdparty-xpost/issues/8
+    * Can now enter actual xml as root element for finer customization
 
 ### 0.4.2 ###
 Can post body as json instead

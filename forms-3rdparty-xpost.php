@@ -83,7 +83,7 @@ class Forms3rdpartyXpost {
 					$format = 'xml'; // correct so consolidated handling below works
 				case 'xml':
 					// sorry for the sad hack to allow actual xml in root element -- https://github.com/zaus/forms-3rdparty-xpost/issues/8#issuecomment-77098615
-					$args['body'] = $this->simple_xmlify($args['body'], null, isset($root) ? str_replace($root, '\\', '/') : 'post')->asXML();
+					$args['body'] = $this->simple_xmlify($args['body'], null, isset($root) ? str_replace('\\', '/', $root) : 'post')->asXML();
 					break;
 				case 'x-www-form-urlencoded':
 					$args['body'] = http_build_query($args['body']);
@@ -152,7 +152,11 @@ class Forms3rdpartyXpost {
 	function simple_xmlify($arr, SimpleXMLElement $root = null, $el = 'x') {
 		// could use instead http://stackoverflow.com/a/1397164/1037948
 
-		if(!isset($root) || null == $root) $root = new SimpleXMLElement('<' . $el . '/>');
+		if(!isset($root) || null == $root) {
+			// xml hack -- if not, self-close
+			if(false === strpos($el, '/')) $el = "<$el/>";
+			$root = new SimpleXMLElement($el);
+		}
 
 		if(is_array($arr)) {
 			foreach($arr as $k => $v) {
@@ -227,8 +231,8 @@ class Forms3rdpartyXpost {
 				<div class="field">
 					<label for="<?php echo $field, '-', $eid ?>"><?php _e('Xml Root Element(s)', $P); ?></label>
 					<input id="<?php echo $field, '-', $eid ?>" type="text" class="text" name="<?php echo $P, '[', $eid, '][', $field, ']'?>" value="<?php echo isset($entity[$field]) ? esc_attr($entity[$field]) : 'post'?>" />
-					<em class="description"><?php _e('Wrap contents all xml-transformed posts with this root element.  You may specify more than one by separating names with forward-slash', $P);?> (<code>/</code>).</em>
-					<em class="description"><?php echo sprintf(__('You may also enter xml prolog and/or xml, but you have to "escape" it as a backslash and omit terminal angle-brackets: %1 vs %2', $P), '<code>Root&gt;&lt;Child&gt;&lt\\Child&gt;&lt;Root</code>', '<code>&lt;Root&gt;&lt;Child&gt;&lt/Child&gt;&lt;Root&gt;</code>');?></em>
+					<em class="description"><?php _e('Wrap contents all xml-transformed posts with this root element.  You may specify more than one by separating names with forward-slash', $P);?> (<code>/</code>), e.g. <code>Root/Child1/Child2</code>.</em>
+					<em class="description"><?php echo sprintf(__('You may also enter xml prolog and/or xml, but you have to "escape" forward-slash as a backslash: %s vs %s', $P), '<code>&lt;Root&gt;&lt;Child attr=&quot;http:\\\\url.com&quot;&gt;&lt\\Child&gt;&lt;\\Root&gt;</code>', '<code>&lt;Root&gt;&lt;Child attr=&quot;http://url.com&quot;&gt;&lt/Child&gt;&lt;Root&gt;</code>');?></em>
 				</div>
 				<?php $field = self::PARAM_HEADER; ?>
 				<div class="field">
