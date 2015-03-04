@@ -13,7 +13,7 @@ Changelog:
 	0.3 doesn't need to be xml to nest, wrap
 	0.4 fix per github issue #3
 	0.4.3 post json + content-type defaults
-	0.5 url style, x-form style; allow root trick
+	0.5 multipart style vs form/url; allow root trick
 */
 
 
@@ -77,29 +77,47 @@ class Forms3rdpartyXpost {
 		if(isset($service[self::PARAM_ASXML])) {
 			$format = $service[self::PARAM_ASXML];
 
+			// wrap
 			switch($format) {
 				// retain legacy < 0.4.2 support for original value ('true') vs desired 'xml'
 				case 'true':
 					$format = 'xml'; // correct so consolidated handling below works
+				// don't wrap
+				case 'xml':
+					break;
+				default:
+					if(isset($root)) $args['body'] = array($root => $args['body']);
+					break;
+			}// wrap root
+
+			// process nodes
+			switch($format) {
+				case 'true':
 				case 'xml':
 					// sorry for the sad hack to allow actual xml in root element -- https://github.com/zaus/forms-3rdparty-xpost/issues/8#issuecomment-77098615
 					$args['body'] = $this->simple_xmlify($args['body'], null, isset($root) ? str_replace('\\', '/', $root) : 'post')->asXML();
 					break;
-				case 'x-www-form-urlencoded':
-					$args['body'] = http_build_query($args['body']);
+				case 'multipart':
+					// via https://gist.github.com/UmeshSingla/40b5f7b0fb7e0ade0438
+					$boundary = wp_generate_password( 24 );
+
+					if(!isset($args['headers'])) $args['headers'] = array();
+					if(!isset($args['headers']['Content-Type'])) $args['headers']['Content-Type'] = 'multipart/form-data; boundary=' . $boundary;
+
+					// not sure how wrap affects things...
+					
+					$args['body'] = $this->as_multipart($args['body'], $boundary);
 					break;
 				case 'json':
-					if(isset($root))
-						$args['body'] = array($root => $args['body']);
-					
 					// just in case...although they pretty much need php 5.3 anyway
 					if(function_exists('json_encode')) {
 						$args['body'] = json_encode($args['body']);
 					}
 					break;
+				case 'x-www-form-urlencoded':
+					$args['body'] = http_build_query($args['body']);
+				//case 'form':
 				default:
-					if(isset($root))
-						$args['body'] = array($root => $args['body']);
 					break;
 			}
 
@@ -175,6 +193,22 @@ class Forms3rdpartyXpost {
 		return $root;
 	}//--	fn	simple_xmlify
 
+	function as_multipart($post_fields, $boundary) {
+		// https://gist.github.com/UmeshSingla/40b5f7b0fb7e0ade0438
+		// http://stackoverflow.com/questions/4238809/example-of-multipart-form-data
+		$payload = '';
+		foreach ( $post_fields as $name => $value ) {
+			$payload .= <<<ENDFIELD
+--$boundary
+Content-Disposition: form-data; name="$name"
+
+$value
+
+ENDFIELD;
+		}
+		return $payload;
+	}//--	fn	as_multipart
+
 
 	// not used...here just in case we want inline help
 	public function service_metabox($P, $entity) {
@@ -206,7 +240,8 @@ class Forms3rdpartyXpost {
 				/* key should be 'xml', but 'true' for legacy support */
 				'true' => 'XML',
 				'json' => 'JSON',
-				'x-www-form-urlencoded' => 'URL' // github issue #6
+				'multipart' => 'Multipart', // github issue #6
+				'x-www-form-urlencoded' => 'URL' // this is really the same as 'form'...
 			);
 	}
 
@@ -225,7 +260,7 @@ class Forms3rdpartyXpost {
 							<option value="<?php echo esc_attr($val), '"'; selected($entity[$field], $val) ?>><?php _e($lbl, $P) ?></option>
 						<?php endforeach ?>
 					</select>
-					<em class="description"><?php _e('Should service transform post body format?  Default is "form" (unchanged).', $P);?></em>
+					<em class="description"><?php _e('Should service transform post body format?  Default is "form" (unchanged), and "url" is essentially the same.', $P);?></em>
 				</div>
 				<?php $field = self::PARAM_WRAPPER; ?>
 				<div class="field">

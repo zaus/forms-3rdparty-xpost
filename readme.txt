@@ -77,7 +77,7 @@ __None available.__
 == Changelog ==
 
 = 0.5 =
-* Added URL-style formatting per GitHub issue #6 https://github.com/zaus/forms-3rdparty-xpost/issues/6
+* Added `multipart/form-data` and 'url' formatting per GitHub issue #6 https://github.com/zaus/forms-3rdparty-xpost/issues/6
 * Added xml prolog/root workaround per GitHub issue #8 https://github.com/zaus/forms-3rdparty-xpost/issues/8
     * Can now enter actual xml as root element for finer customization
 
