@@ -5,7 +5,7 @@ Plugin Name: Forms-3rdparty Xml Post
 Plugin URI: https://github.com/zaus/forms-3rdparty-xpost
 Description: Converts submission from <a href="http://wordpress.org/plugins/forms-3rdparty-integration/">Forms 3rdparty Integration</a> to xml, json, add headers
 Author: zaus, leadlogic
-Version: 0.5
+Version: 1.0
 Author URI: http://drzaus.com
 Changelog:
 	0.1 init
@@ -14,6 +14,7 @@ Changelog:
 	0.4 fix per github issue #3
 	0.4.3 post json + content-type defaults
 	0.5 multipart style vs form/url; allow root trick
+	1.0 autoclose option; robust enough to be v1
 */
 
 
@@ -38,6 +39,7 @@ class Forms3rdpartyXpost {
 	const PARAM_ASXML = 'as-xpost';
 	const PARAM_WRAPPER = 'xpost-wrapper';
 	const PARAM_SEPARATOR = '/'; // darn...interferes with actual xml in root; use '\' workaround later
+	const PARAM_AUTOCLOSE = 'xpostac';
 
 
 	public function post_args($args, $service, $form) {
@@ -94,6 +96,8 @@ class Forms3rdpartyXpost {
 			switch($format) {
 				case 'true':
 				case 'xml':
+					$this->autoclose = isset($service[self::PARAM_AUTOCLOSE]) && $service[self::PARAM_AUTOCLOSE];
+
 					// sorry for the sad hack to allow actual xml in root element -- https://github.com/zaus/forms-3rdparty-xpost/issues/8#issuecomment-77098615
 					$args['body'] = $this->simple_xmlify($args['body'], null, isset($root) ? str_replace('\\', '/', $root) : 'post')->asXML();
 					break;
@@ -167,6 +171,8 @@ class Forms3rdpartyXpost {
 		return array_merge($nest, $body);
 	}//--	fn	nest
 	
+	private $autoclose = false;
+
 	function simple_xmlify($arr, SimpleXMLElement $root = null, $el = 'x') {
 		// could use instead http://stackoverflow.com/a/1397164/1037948
 
@@ -187,7 +193,9 @@ class Forms3rdpartyXpost {
 					);
 			}
 		} else {
-			$root[0] = $arr;
+			// don't set a value if nothing
+			if($this->autoclose && empty($arr)) {}
+			else $root[0] = $arr;
 		}
 
 		return $root;
@@ -274,6 +282,12 @@ ENDFIELD;
 					<label for="<?php echo $field, '-', $eid ?>"><?php _e('Post Headers', $P); ?></label>
 					<input id="<?php echo $field, '-', $eid ?>" type="text" class="text" name="<?php echo $P, '[', $eid, '][', $field, ']'?>" value="<?php echo isset($entity[$field]) ? esc_attr($entity[$field]) : ''?>" />
 					<em class="description"><?php _e('Override the post headers for all posts.  You may specify more than one by providing in &quot;querystring&quot; format', $P);?> (<code>Accept=json&amp;Content-Type=whatever</code>).</em>
+				</div>
+				<?php $field = self::PARAM_AUTOCLOSE; ?>
+				<div class="field">
+					<label for="<?php echo $field, '-', $eid ?>"><?php _e('Autoclose?', $P); ?></label>
+					<input id="<?php echo $field, '-', $eid ?>" type="checkbox" class="checkbox" name="<?php echo $P, '[', $eid, '][', $field, ']'?>" value="1" <?php checked($entity[$field], 1)?> />
+					<em class="description"><?php _e('Should empty elements autoclose or remain as open/close.', $P);?> (e.g. `true` = <code>&lt;el /&gt;</code> or `false` = <code>&lt;el&gt;&lt;/el&gt;</code>).</em>
 				</div>
 			</div>
 		</fieldset>

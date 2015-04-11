@@ -79,6 +79,11 @@ you would use `credentials/@type`, `credentials/user` and `credentials/pass`, re
 
 Just enter the entire root xml in the field, a la http://stackoverflow.com/questions/5992268/simplexml-how-to-correctly-set-encoding-and-xmins
 
+### How do I autoclose/not autoclose empty values? ###
+
+To produce `<SomeTag />`, make sure the "Autoclose" option is enabled.
+To produce `<SomeTag></SomeTag>`, make sure the "Autoclose" option is unchecked.
+
 ## Screenshots ##
 
 __None available.__
