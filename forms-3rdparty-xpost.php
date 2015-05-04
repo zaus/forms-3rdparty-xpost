@@ -286,7 +286,7 @@ ENDFIELD;
 				<?php $field = self::PARAM_AUTOCLOSE; ?>
 				<div class="field">
 					<label for="<?php echo $field, '-', $eid ?>"><?php _e('Autoclose?', $P); ?></label>
-					<input id="<?php echo $field, '-', $eid ?>" type="checkbox" class="checkbox" name="<?php echo $P, '[', $eid, '][', $field, ']'?>" value="1" <?php checked($entity[$field], 1)?> />
+					<input id="<?php echo $field, '-', $eid ?>" type="checkbox" class="checkbox" name="<?php echo $P, '[', $eid, '][', $field, ']'?>" value="1" <?php if(!isset($entity[$field])) $entity[$field] = 0; checked($entity[$field], 1)?> />
 					<em class="description"><?php _e('Should empty elements autoclose or remain as open/close.', $P);?> (e.g. `true` = <code>&lt;el /&gt;</code> or `false` = <code>&lt;el&gt;&lt;/el&gt;</code>).</em>
 				</div>
 			</div>
