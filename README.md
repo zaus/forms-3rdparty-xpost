@@ -60,6 +60,8 @@ would be given as
 
 > `Content-Type=something&X-Special-Header=something-else`
 
+You may also use shortcodes such as `base64` in the header.
+
 ### How do I nest elements? ###
 
 Separate element names within the same 3rdparty field mapping using `/`, so that in order to make:
@@ -90,6 +92,15 @@ __None available.__
 
 ## Changelog ##
 
+### 1.2 ###
+* ignores xml root when considering escaped backslashes (compatibility break -- please update your setting accordingly)
+* 'mask' format -- greater flexibility and control over field/wrapper
+* shortcodes in header; base64 shortcode
+
+### 1.0 ###
+* autoclose option
+* decided it was good enough to be v1
+
 ### 0.5 ###
 * Added `multipart/form-data` and 'url' formatting per GitHub issue #6 https://github.com/zaus/forms-3rdparty-xpost/issues/6
 * Added xml prolog/root workaround per GitHub issue #8 https://github.com/zaus/forms-3rdparty-xpost/issues/8
@@ -116,4 +127,5 @@ Base version - xml and header transformation
 
 ## Upgrade Notice ##
 
-None.
+### 1.2 ###
+* no longer requires that you escape backslashes in the wrapper if providing XML (i.e. it starts with &lt;) -- breaks backwards compatibility
