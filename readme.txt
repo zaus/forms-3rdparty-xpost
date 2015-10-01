@@ -1,7 +1,7 @@
 === Forms: 3rd-Party Xml Post ===
 Contributors: zaus, leadlogic
 Donate link: http://drzaus.com/donate
-Tags: contact form, form, contact form 7, CF7, gravity forms, GF, CRM, mapping, 3rd-party service, services, remote request, xml, json, soap, xml webservice, soap webservice, json webservice, nested fields
+Tags: contact form, form, contact form 7, CF7, gravity forms, GF, CRM, mapping, 3rd-party service, services, remote request, xml, json, soap, xml webservice, soap webservice, json webservice, nested fields, xpost
 Requires at least: 3.0
 Tested up to: 4.1
 Stable tag: trunk
