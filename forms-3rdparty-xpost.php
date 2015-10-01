@@ -156,7 +156,7 @@ class Forms3rdpartyXpost {
 				break;
 		}
 
-		_log('xposted body', $body, 'args', $args);
+		### _log('xposted body', $body, 'args', $args);
 
 		// don't need to wrap with filter -- user can just hook to same forms-integration filter with lower priority
 		return $args;
