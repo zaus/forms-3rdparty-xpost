@@ -323,10 +323,10 @@ ENDFIELD;
 				</div>
 				<?php $field = self::PARAM_WRAPPER; ?>
 				<div class="field">
-					<label for="<?php echo $field, '-', $eid ?>"><?php _e('Xml Root Element(s)', $P); ?></label>
+					<label for="<?php echo $field, '-', $eid ?>"><?php _e('Root Element(s)', $P); ?></label>
 					<input id="<?php echo $field, '-', $eid ?>" type="text" class="text" name="<?php echo $P, '[', $eid, '][', $field, ']'?>" value="<?php echo isset($entity[$field]) ? esc_attr($entity[$field]) : 'post'?>" />
-					<em class="description"><?php _e('Wrap contents all xml-transformed posts with this root element.  You may specify more than one by separating names with forward-slash', $P);?> (<code>/</code>), e.g. <code>Root/Child1/Child2</code>.</em>
-					<em class="description"><?php _e('You may also enter xml prolog and/or xml.', $P);?></em>
+					<em class="description"><?php _e('Wrap contents of transformed posts with this root element.  You may specify more than one by separating names with forward-slash', $P);?> (<code>/</code>), e.g. <code>Root/Child1/Child2</code>.</em>
+					<em class="description"><?php _e('You may also enter xml prolog and/or xml, or a mask with placeholder <code>%s</code> for the body.', $P);?></em>
 				</div>
 				<?php $field = self::PARAM_HEADER; ?>
 				<div class="field">

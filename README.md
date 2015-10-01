@@ -86,6 +86,13 @@ Just enter the entire root xml in the field, a la http://stackoverflow.com/quest
 To produce `<SomeTag />`, make sure the "Autoclose" option is enabled.
 To produce `<SomeTag></SomeTag>`, make sure the "Autoclose" option is unchecked.
 
+### How do I completely customize the xml/wrappers/transform? ###
+
+Use the 'Mask' format, which allows you to specify the result exactly as you want via string replacement.  Useful for complex XML.
+
+The 'Root Element' field will now be treated as a string-replacement mask (a la `sprintf`), so make sure to include the post body with the `%s` placeholder.
+Each '3rd-Party Field' will also be treated the same, using `%s` to indicate where the submission value should go.
+
 ## Screenshots ##
 
 __None available.__
