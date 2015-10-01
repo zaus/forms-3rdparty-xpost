@@ -5,7 +5,7 @@ Plugin Name: Forms-3rdparty Xml Post
 Plugin URI: https://github.com/zaus/forms-3rdparty-xpost
 Description: Converts submission from <a href="http://wordpress.org/plugins/forms-3rdparty-integration/">Forms 3rdparty Integration</a> to xml, json, add headers
 Author: zaus, leadlogic
-Version: 1.0
+Version: 1.2
 Author URI: http://drzaus.com
 Changelog:
 	0.1 init
@@ -15,6 +15,7 @@ Changelog:
 	0.4.3 post json + content-type defaults
 	0.5 multipart style vs form/url; allow root trick
 	1.0 autoclose option; robust enough to be v1
+	1.2 mask style, base64+shortcodes; no longer need to escape xml wrapper
 */
 
 
@@ -33,6 +34,9 @@ class Forms3rdpartyXpost {
 
 		// configure whether to attach or not, how
 		add_filter(self::B.'_service_settings', array(&$this, 'service_settings'), 10, 3);
+		
+		// register some shortcodes
+		if(! shortcode_exists('base64') ) add_shortcode( 'base64', array(&$this, 'sc_base64') );
 	}
 
 	const PARAM_HEADER = 'xpost-header';
@@ -48,7 +52,10 @@ class Forms3rdpartyXpost {
 
 		// check for headers in the form of a querystring
 		if( isset($service[self::PARAM_HEADER]) && !empty($service[self::PARAM_HEADER]) ) {
-			parse_str($service[self::PARAM_HEADER], $headers);
+			// handle shortcodes, special ETL, for functions like BASE64
+			$h = do_shortcode( $service[self::PARAM_HEADER] );
+			
+			parse_str($h, $headers);
 			// do we already have some? merge
 			if(isset($args['headers'])) {
 				$args['headers'] = array_merge( (array)$args['headers'], $headers );
@@ -58,14 +65,30 @@ class Forms3rdpartyXpost {
 			}
 		}
 
-		// nest tags
-		$args['body'] = $this->nest($args['body']);
+		// are we reconstructing this post?
+		// make sure to check in either case if $root was set which,
+		// if you're sending XML, should be -- otherwise it doesn't make much sense as default post
+		if(!isset($service[self::PARAM_ASXML])) return $args;
+		$format = $service[self::PARAM_ASXML];
 
-		### _log('post-args nested', $body);
+		// nest tags only if not masking
+		if($format == 'mask') {
+			$args['body'] = $this->mask($args['body']);
+		}
+		else {
+			$args['body'] = $this->nest($args['body']);
+
+			### _log('post-args nested', $body);
+		}
 		
 		// do we have a custom wrapper?
-		if(isset($service[self::PARAM_WRAPPER]) && !empty($service[self::PARAM_WRAPPER])) {
-			$wrapper = array_reverse( explode(self::PARAM_SEPARATOR, $service[self::PARAM_WRAPPER]) );
+		if(isset($service[self::PARAM_WRAPPER]) && !empty($service[self::PARAM_WRAPPER]))
+			$root = $service[self::PARAM_WRAPPER]; // do_shortcode( $service[self::PARAM_WRAPPER] ); // overkill?
+		else $root = null;
+
+		// only rewrap if not masking or not given xml
+		if(!empty($root) && ($format != 'mask' || $root[0] != '<')) {
+			$wrapper = array_reverse( explode(self::PARAM_SEPARATOR, $root) );
 			// loop through wrapper to wrap
 			$root = array_pop($wrapper); // save terminal wrapper as root for xmlifying
 			if(!empty($wrapper)) foreach($wrapper as $el) {
@@ -73,78 +96,90 @@ class Forms3rdpartyXpost {
 			}
 		}
 
-		// are we sending this form as xml?
-		// make sure to check in either case if $root was set which,
-		// if you're sending XML, should be -- otherwise it doesn't make much sense as default post
-		if(isset($service[self::PARAM_ASXML])) {
-			$format = $service[self::PARAM_ASXML];
+		// wrap
+		switch($format) {
+			// retain legacy < 0.4.2 support for original value ('true') vs desired 'xml'
+			case 'true':
+				$format = 'xml'; // correct so consolidated handling below works
+			// don't wrap
+			case 'mask':
+			case 'xml':
+				break;
+			default:
+				if(isset($root)) $args['body'] = array($root => $args['body']);
+				break;
+		}// wrap root
 
-			// wrap
-			switch($format) {
-				// retain legacy < 0.4.2 support for original value ('true') vs desired 'xml'
-				case 'true':
-					$format = 'xml'; // correct so consolidated handling below works
-				// don't wrap
-				case 'xml':
-					break;
-				default:
-					if(isset($root)) $args['body'] = array($root => $args['body']);
-					break;
-			}// wrap root
+		// process nodes
+		switch($format) {
+			case 'true':
+			case 'xml':
+				$this->autoclose = isset($service[self::PARAM_AUTOCLOSE]) && $service[self::PARAM_AUTOCLOSE];
 
-			// process nodes
-			switch($format) {
-				case 'true':
-				case 'xml':
-					$this->autoclose = isset($service[self::PARAM_AUTOCLOSE]) && $service[self::PARAM_AUTOCLOSE];
+				// sorry for the sad hack to allow actual xml in root element -- https://github.com/zaus/forms-3rdparty-xpost/issues/8#issuecomment-77098615
+				$args['body'] = $this->simple_xmlify($args['body'], null, isset($root) ? str_replace('\\', '/', $root) : 'post')->asXML();
+				break;
+			case 'multipart':
+				// via https://gist.github.com/UmeshSingla/40b5f7b0fb7e0ade0438
+				$boundary = wp_generate_password( 24 );
 
-					// sorry for the sad hack to allow actual xml in root element -- https://github.com/zaus/forms-3rdparty-xpost/issues/8#issuecomment-77098615
-					$args['body'] = $this->simple_xmlify($args['body'], null, isset($root) ? str_replace('\\', '/', $root) : 'post')->asXML();
-					break;
-				case 'multipart':
-					// via https://gist.github.com/UmeshSingla/40b5f7b0fb7e0ade0438
-					$boundary = wp_generate_password( 24 );
+				if(!isset($args['headers'])) $args['headers'] = array();
+				if(!isset($args['headers']['Content-Type'])) $args['headers']['Content-Type'] = 'multipart/form-data; boundary=' . $boundary;
 
-					if(!isset($args['headers'])) $args['headers'] = array();
-					if(!isset($args['headers']['Content-Type'])) $args['headers']['Content-Type'] = 'multipart/form-data; boundary=' . $boundary;
+				// not sure how wrap affects things...
+				
+				$args['body'] = $this->as_multipart($args['body'], $boundary);
+				break;
+			case 'json':
+				// just in case...although they pretty much need php 5.3 anyway
+				if(function_exists('json_encode')) {
+					$args['body'] = json_encode($args['body']);
+				}
+				break;
+			case 'mask':
+				$args['body'] = sprintf($root ? $root : '%s', implode('', $args['body']));
+				break;
+			case 'x-www-form-urlencoded':
+				$args['body'] = http_build_query($args['body']);
+			//case 'form':
+			default:
+				break;
+		}
 
-					// not sure how wrap affects things...
-					
-					$args['body'] = $this->as_multipart($args['body'], $boundary);
-					break;
-				case 'json':
-					// just in case...although they pretty much need php 5.3 anyway
-					if(function_exists('json_encode')) {
-						$args['body'] = json_encode($args['body']);
-					}
-					break;
-				case 'x-www-form-urlencoded':
-					$args['body'] = http_build_query($args['body']);
-				//case 'form':
-				default:
-					break;
-			}
+		// also set appropriate headers if not already
+		switch($format) {
+			case 'x-www-form-urlencoded':
+			case 'xml':
+			case 'json':
+				if(!isset($args['headers'])) $args['headers'] = array();
+				if(!isset($args['headers']['Content-Type'])) $args['headers']['Content-Type'] = 'application/' . $format;
+				break;
+		}
 
-			// also set appropriate headers if not already
-			switch($format) {
-				case 'x-www-form-urlencoded':
-				case 'xml':
-				case 'json':
-					if(!isset($args['headers'])) $args['headers'] = array();
-					if(!isset($args['headers']['Content-Type'])) $args['headers']['Content-Type'] = 'application/' . $format;
-					break;
-			}
-
-		}//	if isset service paramxml
-		
-
-		### _log('xmlified body', $body, 'args', $args);
+		_log('xposted body', $body, 'args', $args);
 
 		// don't need to wrap with filter -- user can just hook to same forms-integration filter with lower priority
 		return $args;
 	}//--	fn	post_args
 
+	
+	
+	
+	
+	#region -------- convert body -----------
 
+	function mask($body) {
+		// scan body to replace formatted mask
+		// need a new target so we can enumerate the original
+		$nest = array();
+
+		foreach($body as $k => $v) {
+			// attach to new result so we don't dirty the enumerator
+			$nest []= sprintf($k, $v); // TODO: crazy parameter extraction to reference other parts of $body
+		}
+	
+		return $nest;
+	}//--	fn	nest
 
 	function nest($body) {
 		// scan body to turn depth-2 into nested depth-n list
@@ -164,7 +199,7 @@ class Forms3rdpartyXpost {
 				$v = array($e => $v);
 			}
 
-			// attach to new result so we don't dirty the enumerator
+			// attach to new result so we don't dirty the enumerator (although we already unset...)
 			$nest = array_merge_recursive($nest, $v);
 		}
 	
@@ -217,6 +252,21 @@ ENDFIELD;
 		return $payload;
 	}//--	fn	as_multipart
 
+	#endregion -------- convert body -----------
+
+	
+	
+	
+	#region -------- shortcode -----------
+	
+	function sc_base64( $atts, $content = '' ) {
+		$atts = shortcode_atts( array(), $atts, 'base64' );
+
+		return base64_encode($content . implode('', $atts));
+	}
+	
+	#endregion -------- shortcode -----------
+	
 
 	// not used...here just in case we want inline help
 	public function service_metabox($P, $entity) {
@@ -224,7 +274,7 @@ ENDFIELD;
 		?>
 		<div id="metabox-<?php echo self::N; ?>" class="meta-box">
 		<div class="shortcode-description postbox" data-icon="?">
-			<h3 class="hndle"><span><?php _e('Xml Post', $P) ?></span></h3>
+			<h3 class="hndle"><span><?php _e('X Post', $P) ?></span></h3>
 			
 			<div class="description-body inside">
 
@@ -248,6 +298,7 @@ ENDFIELD;
 				/* key should be 'xml', but 'true' for legacy support */
 				'true' => 'XML',
 				'json' => 'JSON',
+				'mask' => 'Format Mask',
 				'multipart' => 'Multipart', // github issue #6
 				'x-www-form-urlencoded' => 'URL' // this is really the same as 'form'...
 			);
@@ -255,7 +306,7 @@ ENDFIELD;
 
 	public function service_settings($eid, $P, $entity) {
 		?>
-		<fieldset><legend><span><?php _e('Xml Post'); ?></span></legend>
+		<fieldset><legend><span><?php _e('X Post'); ?></span></legend>
 			<div class="inside">
 				<p class="description"><?php _e('Configure how to transform service post body into alternate format, and/or set headers.', $P) ?></p>
 				<p class="description"><?php _e('Leave any field blank to ignore it.', $P) ?></p>
@@ -275,19 +326,19 @@ ENDFIELD;
 					<label for="<?php echo $field, '-', $eid ?>"><?php _e('Xml Root Element(s)', $P); ?></label>
 					<input id="<?php echo $field, '-', $eid ?>" type="text" class="text" name="<?php echo $P, '[', $eid, '][', $field, ']'?>" value="<?php echo isset($entity[$field]) ? esc_attr($entity[$field]) : 'post'?>" />
 					<em class="description"><?php _e('Wrap contents all xml-transformed posts with this root element.  You may specify more than one by separating names with forward-slash', $P);?> (<code>/</code>), e.g. <code>Root/Child1/Child2</code>.</em>
-					<em class="description"><?php echo sprintf(__('You may also enter xml prolog and/or xml, but you have to "escape" forward-slash as a backslash: %s vs %s', $P), '<code>&lt;Root&gt;&lt;Child attr=&quot;http:\\\\url.com&quot;&gt;&lt\\Child&gt;&lt;\\Root&gt;</code>', '<code>&lt;Root&gt;&lt;Child attr=&quot;http://url.com&quot;&gt;&lt/Child&gt;&lt;Root&gt;</code>');?></em>
+					<em class="description"><?php _e('You may also enter xml prolog and/or xml.', $P);?></em>
 				</div>
 				<?php $field = self::PARAM_HEADER; ?>
 				<div class="field">
 					<label for="<?php echo $field, '-', $eid ?>"><?php _e('Post Headers', $P); ?></label>
 					<input id="<?php echo $field, '-', $eid ?>" type="text" class="text" name="<?php echo $P, '[', $eid, '][', $field, ']'?>" value="<?php echo isset($entity[$field]) ? esc_attr($entity[$field]) : ''?>" />
-					<em class="description"><?php _e('Override the post headers for all posts.  You may specify more than one by providing in &quot;querystring&quot; format', $P);?> (<code>Accept=json&amp;Content-Type=whatever</code>).</em>
+					<em class="description"><?php _e('Override the post headers for all posts.  You may specify more than one by providing in &quot;querystring&quot; format.  Allows shortcodes like <code>[base64]</code>', $P);?> (<code>Accept=json&amp;Content-Type=whatever&amp;Authorization=Basic [base64]user:pass[/base64]</code>).</em>
 				</div>
 				<?php $field = self::PARAM_AUTOCLOSE; ?>
 				<div class="field">
 					<label for="<?php echo $field, '-', $eid ?>"><?php _e('Autoclose?', $P); ?></label>
 					<input id="<?php echo $field, '-', $eid ?>" type="checkbox" class="checkbox" name="<?php echo $P, '[', $eid, '][', $field, ']'?>" value="1" <?php if(!isset($entity[$field])) $entity[$field] = 0; checked($entity[$field], 1)?> />
-					<em class="description"><?php _e('Should empty elements autoclose or remain as open/close.', $P);?> (e.g. `true` = <code>&lt;el /&gt;</code> or `false` = <code>&lt;el&gt;&lt;/el&gt;</code>).</em>
+					<em class="description"><?php _e('Should empty xml elements autoclose or remain as open/close.', $P);?> (e.g. `true` = <code>&lt;el /&gt;</code> or `false` = <code>&lt;el&gt;&lt;/el&gt;</code>).</em>
 				</div>
 			</div>
 		</fieldset>
