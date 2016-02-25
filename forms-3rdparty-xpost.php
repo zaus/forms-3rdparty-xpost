@@ -5,7 +5,7 @@ Plugin Name: Forms-3rdparty Xml Post
 Plugin URI: https://github.com/zaus/forms-3rdparty-xpost
 Description: Converts submission from <a href="http://wordpress.org/plugins/forms-3rdparty-integration/">Forms 3rdparty Integration</a> to xml, json, add headers
 Author: zaus, leadlogic
-Version: 1.2
+Version: 1.3
 Author URI: http://drzaus.com
 Changelog:
 	0.1 init
@@ -16,6 +16,7 @@ Changelog:
 	0.5 multipart style vs form/url; allow root trick
 	1.0 autoclose option; robust enough to be v1
 	1.2 mask style, base64+shortcodes; no longer need to escape xml wrapper
+	1.3 addressing issue #7 with repeating nodes
 */
 
 
@@ -221,11 +222,10 @@ class Forms3rdpartyXpost {
 			foreach($arr as $k => $v) {
 				// special: attributes
 				if(is_string($k) && $k[0] == '@') $root->addAttribute(substr($k, 1),$v);
+				// special: a numerical index only should mean repeating nodes per #7
+				else if(is_numeric($k)) $this->simple_xmlify($v, $root->addChild($root->getName()));
 				// normal: append
-				else $this->simple_xmlify($v, $root->addChild(
-						// fix 'invalid xml name' by prefixing numeric keys
-						is_numeric($k) ? 'n' . $k : $k)
-					);
+				else $this->simple_xmlify($v, $root->addChild($k));
 			}
 		} else {
 			// don't set a value if nothing
