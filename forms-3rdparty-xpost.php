@@ -232,7 +232,7 @@ class Forms3rdpartyXpost {
 		return($arr);
 	}
 
-	function simple_xmlify($arr, SimpleXMLElement $root = null, $el = 'x') {
+	function simple_xmlify($arr, SimpleXMLElement $root = null, $el = 'x', $parent = null) {
 		// could use instead http://stackoverflow.com/a/1397164/1037948
 
 		if(!isset($root) || null == $root) {
@@ -246,9 +246,9 @@ class Forms3rdpartyXpost {
 				// special: attributes
 				if(is_string($k) && $k[0] == '@') $root->addAttribute(substr($k, 1),$v);
 				// special: a numerical index only should mean repeating nodes per #7
-				else if(is_numeric($k)) $this->simple_xmlify($v, $root->addChild($root->getName()));
+				else if(is_numeric($k)) $this->simple_xmlify($v, $parent->addChild($root->getName()), $el, $parent);
 				// normal: append
-				else $this->simple_xmlify($v, $root->addChild($k));
+				else $this->simple_xmlify($v, $root->addChild($k), $el, $root);
 			}
 		} else {
 			// don't set a value if nothing
