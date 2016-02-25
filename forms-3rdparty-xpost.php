@@ -199,15 +199,38 @@ class Forms3rdpartyXpost {
 			foreach($els as $e) {
 				$v = array($e => $v);
 			}
-
+			
 			// attach to new result so we don't dirty the enumerator (although we already unset...)
-			$nest = array_merge_recursive($nest, $v);
+			$nest = $this->array_merge_rec_i($nest, $v); //array_merge_recursive($nest, $v);
 		}
 	
 		return array_merge($nest, $body);
 	}//--	fn	nest
 	
 	private $autoclose = false;
+
+
+	/**
+	 * Special recursive merge that handles numeric indices the same as string.
+	 * The missing piece from issue #11
+	 * @param $arr the "base" array
+	 * @param $ins the array to insert
+	 */
+	function array_merge_rec_i($arr,$ins) {
+		// http://php.net/manual/en/function.array-merge-recursive.php#82976
+			
+		# Loop through all Elements in $ins:
+		if (is_array($arr) && is_array($ins)) foreach ($ins as $k => $v) {
+			# Key exists in $arr and both Elemente are Arrays: Merge recursively.
+			if (isset($arr[$k]) && is_array($v) && is_array($arr[$k])) $arr[$k] = $this->array_merge_rec_i($arr[$k],$v);
+				# Place more Conditions here (see below)
+				# ...
+				# Otherwise replace Element in $arr with Element in $ins:
+			else $arr[$k] = $v;
+		}
+		# Return merged Arrays:
+		return($arr);
+	}
 
 	function simple_xmlify($arr, SimpleXMLElement $root = null, $el = 'x') {
 		// could use instead http://stackoverflow.com/a/1397164/1037948
