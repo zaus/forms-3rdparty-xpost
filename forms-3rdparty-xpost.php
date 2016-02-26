@@ -5,7 +5,7 @@ Plugin Name: Forms-3rdparty Xml Post
 Plugin URI: https://github.com/zaus/forms-3rdparty-xpost
 Description: Converts submission from <a href="http://wordpress.org/plugins/forms-3rdparty-integration/">Forms 3rdparty Integration</a> to xml, json, add headers
 Author: zaus, leadlogic
-Version: 1.2
+Version: 1.3
 Author URI: http://drzaus.com
 Changelog:
 	0.1 init
@@ -16,6 +16,7 @@ Changelog:
 	0.5 multipart style vs form/url; allow root trick
 	1.0 autoclose option; robust enough to be v1
 	1.2 mask style, base64+shortcodes; no longer need to escape xml wrapper
+	1.3 addressing issue #7 with repeating nodes
 */
 
 
@@ -71,15 +72,18 @@ class Forms3rdpartyXpost {
 		if(!isset($service[self::PARAM_ASXML])) return $args;
 		$format = $service[self::PARAM_ASXML];
 
+		### _log(__FUNCTION__ . '@' . __LINE__, $args['body'] );
+		
 		// nest tags only if not masking
 		if($format == 'mask') {
 			$args['body'] = $this->mask($args['body']);
 		}
 		else {
 			$args['body'] = $this->nest($args['body']);
-
-			### _log('post-args nested', $body);
 		}
+
+		### _log(__FUNCTION__ . '@' . __LINE__, $args['body'] );
+
 		
 		// do we have a custom wrapper?
 		if(isset($service[self::PARAM_WRAPPER]) && !empty($service[self::PARAM_WRAPPER]))
@@ -198,9 +202,9 @@ class Forms3rdpartyXpost {
 			foreach($els as $e) {
 				$v = array($e => $v);
 			}
-
+			
 			// attach to new result so we don't dirty the enumerator (although we already unset...)
-			$nest = array_merge_recursive($nest, $v);
+			$nest = $this->array_merge_rec_i($nest, $v); //array_merge_recursive($nest, $v);
 		}
 	
 		return array_merge($nest, $body);
@@ -208,7 +212,30 @@ class Forms3rdpartyXpost {
 	
 	private $autoclose = false;
 
-	function simple_xmlify($arr, SimpleXMLElement $root = null, $el = 'x') {
+
+	/**
+	 * Special recursive merge that handles numeric indices the same as string.
+	 * The missing piece from issue #11
+	 * @param $arr the "base" array
+	 * @param $ins the array to insert
+	 */
+	function array_merge_rec_i($arr,$ins) {
+		// http://php.net/manual/en/function.array-merge-recursive.php#82976
+			
+		# Loop through all Elements in $ins:
+		if (is_array($arr) && is_array($ins)) foreach ($ins as $k => $v) {
+			# Key exists in $arr and both Elemente are Arrays: Merge recursively.
+			if (isset($arr[$k]) && is_array($v) && is_array($arr[$k])) $arr[$k] = $this->array_merge_rec_i($arr[$k],$v);
+				# Place more Conditions here (see below)
+				# ...
+				# Otherwise replace Element in $arr with Element in $ins:
+			else $arr[$k] = $v;
+		}
+		# Return merged Arrays:
+		return($arr);
+	}
+
+	function simple_xmlify($arr, SimpleXMLElement $root = null, $el = 'x', $parent = null) {
 		// could use instead http://stackoverflow.com/a/1397164/1037948
 
 		if(!isset($root) || null == $root) {
@@ -216,16 +243,21 @@ class Forms3rdpartyXpost {
 			if(false === strpos($el, '/')) $el = "<$el/>";
 			$root = new SimpleXMLElement($el);
 		}
+		
+		### _log(__FUNCTION__, array($arr, $root, $el, $parent));
 
 		if(is_array($arr)) {
 			foreach($arr as $k => $v) {
 				// special: attributes
 				if(is_string($k) && $k[0] == '@') $root->addAttribute(substr($k, 1),$v);
+				// special: a numerical index only should mean repeating nodes per #7
+				else if(is_numeric($k)) {
+					// first time, just add it to the existing element
+					if($k == 0) $this->simple_xmlify($v, $root, $el, $parent);
+					else $this->simple_xmlify($v, $parent->addChild($root->getName()), $el, $parent);
+				}
 				// normal: append
-				else $this->simple_xmlify($v, $root->addChild(
-						// fix 'invalid xml name' by prefixing numeric keys
-						is_numeric($k) ? 'n' . $k : $k)
-					);
+				else $this->simple_xmlify($v, $root->addChild($k), $el, $root);
 			}
 		} else {
 			// don't set a value if nothing

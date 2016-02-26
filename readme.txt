@@ -3,7 +3,7 @@ Contributors: zaus, leadlogic
 Donate link: http://drzaus.com/donate
 Tags: contact form, form, contact form 7, CF7, gravity forms, GF, CRM, mapping, 3rd-party service, services, remote request, xml, json, soap, xml webservice, soap webservice, json webservice, nested fields, xpost
 Requires at least: 3.0
-Tested up to: 4.1
+Tested up to: 4.3
 Stable tag: trunk
 License: GPLv2 or later
 
@@ -23,7 +23,7 @@ This plugin can turn the 3rdparty mappings into XML elements, so that each form 
 3. Activate plugin
 4. Go to new admin subpage _"3rdparty Services"_ under the CF7 "Contact" menu or Gravity Forms "Forms" menu and configure services + field mapping.
 5. Configure the new "Xml Post" section to choose which services send as xml and/or determine special headers (given as a url querystring).
-6. Nest fields by separating nodes with `/`, and indicate attributes with `@`.
+6. Nest fields by separating nodes with `/`, and indicate attributes with `@`.  Numeric indexes by themselves will result in repetition of the parent element (ex. `item/%i/sub` could make `<item><sub /></item><item><sub /></item>`).
 
 [Contact Form 7]: http://wordpress.org/extend/plugins/contact-form-7/ "Contact Form 7"
 [Gravity Forms]: http://www.gravityforms.com/ "Gravity Forms"
@@ -68,6 +68,26 @@ you would use `credentials/@type`, `credentials/user` and `credentials/pass`, re
 
     credentials[@type]=123&credentials[user]=xyz&credentials[pass]=abc
 
+= How do I repeat elements? =
+
+As of v1.3, if there is a standalone numerical index it will cause repetition of the "parent" element.
+
+ex) If the post is:
+
+	item => array (
+			0 => value1,
+			1 => value2,
+			2 => value3
+		)
+
+it will result in
+
+	<item>value1</item>
+	<item>value2</item>
+	<item>value3</item>
+
+You can accomplish this with the Forms-3rdparty separator `[%]` to place your index appropriately.
+
 = How do I set xml prolog attributes? =
 
 Just enter the entire root xml in the field, a la http://stackoverflow.com/questions/5992268/simplexml-how-to-correctly-set-encoding-and-xmins
@@ -89,6 +109,10 @@ Each '3rd-Party Field' will also be treated the same, using `%s` to indicate whe
 __None available.__
 
 == Changelog ==
+
+= 1.3 =
+* removed somewhat useless numerical index prefixing (n0, n1, nEtc)
+* replaced with element repetition instead
 
 = 1.2 =
 * ignores xml root when considering escaped backslashes (compatibility break -- please update your setting accordingly)
@@ -125,5 +149,9 @@ Base version - xml and header transformation
 
 == Upgrade Notice ==
 
-### 1.2 ###
+= 1.3 =
+* no longer prefixes standalone numerical indexes with `n`
+* instead will repeat the 'parent' element -- so a mapping of `item/%i/sub%i` could make `<item><sub1 /></item><item><sub2 /></item>`
+
+= 1.2 =
 * no longer requires that you escape backslashes in the wrapper if providing XML (i.e. it starts with &lt;) -- breaks backwards compatibility
