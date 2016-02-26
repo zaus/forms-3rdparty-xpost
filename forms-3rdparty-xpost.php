@@ -72,15 +72,18 @@ class Forms3rdpartyXpost {
 		if(!isset($service[self::PARAM_ASXML])) return $args;
 		$format = $service[self::PARAM_ASXML];
 
+		### _log(__FUNCTION__ . '@' . __LINE__, $args['body'] );
+		
 		// nest tags only if not masking
 		if($format == 'mask') {
 			$args['body'] = $this->mask($args['body']);
 		}
 		else {
 			$args['body'] = $this->nest($args['body']);
-
-			### _log('post-args nested', $body);
 		}
+
+		### _log(__FUNCTION__ . '@' . __LINE__, $args['body'] );
+
 		
 		// do we have a custom wrapper?
 		if(isset($service[self::PARAM_WRAPPER]) && !empty($service[self::PARAM_WRAPPER]))
@@ -240,6 +243,8 @@ class Forms3rdpartyXpost {
 			if(false === strpos($el, '/')) $el = "<$el/>";
 			$root = new SimpleXMLElement($el);
 		}
+		
+		### _log(__FUNCTION__, array($arr, $root, $el, $parent));
 
 		if(is_array($arr)) {
 			foreach($arr as $k => $v) {
