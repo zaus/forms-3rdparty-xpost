@@ -246,7 +246,11 @@ class Forms3rdpartyXpost {
 				// special: attributes
 				if(is_string($k) && $k[0] == '@') $root->addAttribute(substr($k, 1),$v);
 				// special: a numerical index only should mean repeating nodes per #7
-				else if(is_numeric($k)) $this->simple_xmlify($v, $parent->addChild($root->getName()), $el, $parent);
+				else if(is_numeric($k)) {
+					// first time, just add it to the existing element
+					if($k == 0) $this->simple_xmlify($v, $root, $el, $parent);
+					else $this->simple_xmlify($v, $parent->addChild($root->getName()), $el, $parent);
+				}
 				// normal: append
 				else $this->simple_xmlify($v, $root->addChild($k), $el, $root);
 			}
