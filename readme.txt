@@ -110,6 +110,10 @@ __None available.__
 
 == Changelog ==
 
+= 1.3.2 =
+* fix: bug parsing existing xml root
+* allow shortcodes in root
+
 = 1.3 =
 * removed somewhat useless numerical index prefixing (n0, n1, nEtc)
 * replaced with element repetition instead
@@ -148,6 +152,9 @@ Can nest regular post fields even when not submitting XML.
 Base version - xml and header transformation
 
 == Upgrade Notice ==
+
+= 1.3.2 =
+* fixed a bug in root parsing for already xml, please let me know if it breaks your usage
 
 = 1.3 =
 * no longer prefixes standalone numerical indexes with `n`

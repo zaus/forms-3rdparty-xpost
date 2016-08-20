@@ -5,7 +5,7 @@ Plugin Name: Forms-3rdparty Xml Post
 Plugin URI: https://github.com/zaus/forms-3rdparty-xpost
 Description: Converts submission from <a href="http://wordpress.org/plugins/forms-3rdparty-integration/">Forms 3rdparty Integration</a> to xml, json, add headers
 Author: zaus, leadlogic
-Version: 1.3
+Version: 1.3.2
 Author URI: http://drzaus.com
 Changelog:
 	0.1 init
@@ -17,6 +17,7 @@ Changelog:
 	1.0 autoclose option; robust enough to be v1
 	1.2 mask style, base64+shortcodes; no longer need to escape xml wrapper
 	1.3 addressing issue #7 with repeating nodes
+	1.3.2 fix: bug parsing existing xml root; allow shortcodes in root
 */
 
 
