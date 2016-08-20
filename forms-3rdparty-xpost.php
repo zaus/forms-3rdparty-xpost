@@ -87,7 +87,7 @@ class Forms3rdpartyXpost {
 		
 		// do we have a custom wrapper?
 		if(isset($service[self::PARAM_WRAPPER]) && !empty($service[self::PARAM_WRAPPER]))
-			$root = $service[self::PARAM_WRAPPER]; // do_shortcode( $service[self::PARAM_WRAPPER] ); // overkill?
+			$root = do_shortcode( $service[self::PARAM_WRAPPER] ); // overkill?
 		else $root = null;
 
 		// only rewrap if not masking or not given xml
@@ -240,7 +240,7 @@ class Forms3rdpartyXpost {
 
 		if(!isset($root) || null == $root) {
 			// xml hack -- if not, self-close
-			if(false === strpos($el, '/')) $el = "<$el/>";
+			if(false === strpos($el, '/') && 0 !== strpos($el, '<')) $el = "<$el/>";
 			$root = new SimpleXMLElement($el);
 		}
 		
