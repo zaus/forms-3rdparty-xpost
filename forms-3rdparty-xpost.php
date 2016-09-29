@@ -5,7 +5,7 @@ Plugin Name: Forms-3rdparty Xml Post
 Plugin URI: https://github.com/zaus/forms-3rdparty-xpost
 Description: Converts submission from <a href="http://wordpress.org/plugins/forms-3rdparty-integration/">Forms 3rdparty Integration</a> to xml, json, add headers
 Author: zaus, leadlogic
-Version: 1.3.2
+Version: 1.3.3
 Author URI: http://drzaus.com
 Changelog:
 	0.1 init
@@ -18,6 +18,7 @@ Changelog:
 	1.2 mask style, base64+shortcodes; no longer need to escape xml wrapper
 	1.3 addressing issue #7 with repeating nodes
 	1.3.2 fix: bug parsing existing xml root; allow shortcodes in root
+	1.3.3 fix: actually fixing xml-in-root bug, don't need backslash hack
 */
 
 
@@ -91,8 +92,8 @@ class Forms3rdpartyXpost {
 			$root = do_shortcode( $service[self::PARAM_WRAPPER] ); // overkill?
 		else $root = null;
 
-		// only rewrap if not masking or not given xml
-		if(!empty($root) && ($format != 'mask' || $root[0] != '<')) {
+		// only rewrap if not masking AND not given xml
+		if(!empty($root) && ($format != 'mask' && $root[0] != '<')) {
 			$wrapper = array_reverse( explode(self::PARAM_SEPARATOR, $root) );
 			// loop through wrapper to wrap
 			$root = array_pop($wrapper); // save terminal wrapper as root for xmlifying

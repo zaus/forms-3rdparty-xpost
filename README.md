@@ -8,7 +8,7 @@
 
 **Requires at least:** 3.0
 
-**Tested up to:** 4.3
+**Tested up to:** 4.6.1
 
 **Stable tag:** trunk
 
@@ -118,6 +118,9 @@ Each '3rd-Party Field' will also be treated the same, using `%s` to indicate whe
 __None available.__
 
 ## Changelog ##
+
+### 1.3.3 ###
+* actually fix #24 parsing xml in root
 
 ### 1.3.2 ###
 * fix: bug parsing existing xml root

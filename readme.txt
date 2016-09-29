@@ -3,7 +3,7 @@ Contributors: zaus, leadlogic
 Donate link: http://drzaus.com/donate
 Tags: contact form, form, contact form 7, CF7, gravity forms, GF, CRM, mapping, 3rd-party service, services, remote request, xml, json, soap, xml webservice, soap webservice, json webservice, nested fields, xpost
 Requires at least: 3.0
-Tested up to: 4.3
+Tested up to: 4.6.1
 Stable tag: trunk
 License: GPLv2 or later
 
@@ -109,6 +109,9 @@ Each '3rd-Party Field' will also be treated the same, using `%s` to indicate whe
 __None available.__
 
 == Changelog ==
+
+= 1.3.3 =
+* actually fix #24 parsing xml in root
 
 = 1.3.2 =
 * fix: bug parsing existing xml root
