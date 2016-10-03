@@ -108,16 +108,20 @@ To produce `<SomeTag></SomeTag>`, make sure the "Autoclose" option is unchecked.
 
 ### How do I completely customize the xml/wrappers/transform? ###
 
-Use the 'Mask' format, which allows you to specify the result exactly as you want via string replacement.  Useful for complex XML.
+Use the 'Mask' format, which allows you to specify the result exactly as you want via string replacement (`sprintf`), or the 'Replace' format which will replace string tokens (`{{3rdparty}}`).  Useful for complex XML.
 
-The 'Root Element' field will now be treated as a string-replacement mask (a la `sprintf`), so make sure to include the post body with the `%s` placeholder.
-Each '3rd-Party Field' will also be treated the same, using `%s` to indicate where the submission value should go.
+The 'Root Element' field will now be treated as a string-replacement mask (a la `sprintf` for "Mask" or `str_replace` for "Replace"), so make sure to include the post body with the appropriate placeholder(s) (`%s` for "Mask", `{{3rdparty_Fields}}` for "Replace").
+For 'Mask' format, each '3rd-Party Field' will also be treated the same, using `%s` to indicate where the submission value should go.
+For 'Replace' format, repeating fields are not handled -- it essentially looks for instances of each "3rd-Party Field" column and replaces it with the corresponding input value.
 
 ## Screenshots ##
 
 __None available.__
 
 ## Changelog ##
+
+### 1.4 ###
+* new string replacement format using mustache-style token placeholders `{{3rdparty}}`
 
 ### 1.3.3 ###
 * actually fix #24 parsing xml in root

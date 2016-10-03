@@ -5,7 +5,7 @@ Plugin Name: Forms-3rdparty Xml Post
 Plugin URI: https://github.com/zaus/forms-3rdparty-xpost
 Description: Converts submission from <a href="http://wordpress.org/plugins/forms-3rdparty-integration/">Forms 3rdparty Integration</a> to xml, json, add headers
 Author: zaus, leadlogic
-Version: 1.3.3
+Version: 1.4
 Author URI: http://drzaus.com
 Changelog:
 	0.1 init
@@ -18,7 +18,7 @@ Changelog:
 	1.2 mask style, base64+shortcodes; no longer need to escape xml wrapper
 	1.3 addressing issue #7 with repeating nodes
 	1.3.2 fix: bug parsing existing xml root; allow shortcodes in root
-	1.3.3 fix: actually fixing xml-in-root bug, don't need backslash hack
+	1.4	replace style
 */
 
 
@@ -48,6 +48,9 @@ class Forms3rdpartyXpost {
 	const PARAM_SEPARATOR = '/'; // darn...interferes with actual xml in root; use '\' workaround later
 	const PARAM_AUTOCLOSE = 'xpostac';
 
+	const FORMAT_MASK = 'mask';
+	const FORMAT_REPLACE = 'rpl';
+
 
 	public function post_args($args, $service, $form) {
 
@@ -76,11 +79,11 @@ class Forms3rdpartyXpost {
 
 		### _log(__FUNCTION__ . '@' . __LINE__, $args['body'] );
 		
-		// nest tags only if not masking
-		if($format == 'mask') {
+		// nest tags only if not masking or replacing
+		if($format == self::FORMAT_MASK) {
 			$args['body'] = $this->mask($args['body']);
 		}
-		else {
+		elseif($format != self::FORMAT_REPLACE) {
 			$args['body'] = $this->nest($args['body']);
 		}
 
@@ -93,7 +96,8 @@ class Forms3rdpartyXpost {
 		else $root = null;
 
 		// only rewrap if not masking AND not given xml
-		if(!empty($root) && ($format != 'mask' && $root[0] != '<')) {
+		### _log('wrap-root', $root);
+		if(!empty($root) && ($root[0] != '<' && $format != self::FORMAT_MASK && $format != self::FORMAT_REPLACE)) {
 			$wrapper = array_reverse( explode(self::PARAM_SEPARATOR, $root) );
 			// loop through wrapper to wrap
 			$root = array_pop($wrapper); // save terminal wrapper as root for xmlifying
@@ -101,6 +105,7 @@ class Forms3rdpartyXpost {
 				$args['body'] = array($el => $args['body']);
 			}
 		}
+		### _log('after-wrap-root', $root);
 
 		// wrap
 		switch($format) {
@@ -108,7 +113,8 @@ class Forms3rdpartyXpost {
 			case 'true':
 				$format = 'xml'; // correct so consolidated handling below works
 			// don't wrap
-			case 'mask':
+			case self::FORMAT_REPLACE:
+			case self::FORMAT_MASK:
 			case 'xml':
 				break;
 			default:
@@ -142,8 +148,15 @@ class Forms3rdpartyXpost {
 					$args['body'] = json_encode($args['body']);
 				}
 				break;
-			case 'mask':
+			case self::FORMAT_MASK:
 				$args['body'] = sprintf($root ? $root : '%s', implode('', $args['body']));
+				break;
+			case self::FORMAT_REPLACE:
+				### _log(__CLASS__ . '.' . __FUNCTION__ . '/'. $format, $args['body'], $service['mapping']);
+				$args['body'] = str_replace(
+					array_map(function($k) { return '{{' . $k . '}}'; }, array_keys($args['body']))
+					, array_values($args['body'])
+					, $root);
 				break;
 			case 'x-www-form-urlencoded':
 				$args['body'] = http_build_query($args['body']);
@@ -307,8 +320,8 @@ ENDFIELD;
 
 		?>
 		<div id="metabox-<?php echo self::N; ?>" class="meta-box">
-		<div class="shortcode-description postbox" data-icon="?">
-			<h3 class="hndle"><span><?php _e('X Post', $P) ?></span></h3>
+		<div class="shortcode-description postbox collapsed" data-icon="?">
+			<h3 class="hndle actn"><span><?php _e('X Post', $P) ?></span></h3>
 			
 			<div class="description-body inside">
 
@@ -328,19 +341,20 @@ ENDFIELD;
 	 */
 	private function get_formats() {
 		return array(
-				'form' => 'Form',
-				/* key should be 'xml', but 'true' for legacy support */
-				'true' => 'XML',
-				'json' => 'JSON',
-				'mask' => 'Format Mask',
-				'multipart' => 'Multipart', // github issue #6
-				'x-www-form-urlencoded' => 'URL' // this is really the same as 'form'...
-			);
+			'form' => 'Form',
+			/* key should be 'xml', but 'true' for legacy support */
+			'true' => 'XML',
+			'json' => 'JSON',
+			self::FORMAT_MASK => 'Format Mask',
+			self::FORMAT_REPLACE => 'Replace Placeholders',
+			'multipart' => 'Multipart', // github issue #6
+			'x-www-form-urlencoded' => 'URL' // this is really the same as 'form'...
+		);
 	}
 
 	public function service_settings($eid, $P, $entity) {
 		?>
-		<fieldset><legend><span><?php _e('X Post'); ?></span></legend>
+		<fieldset class="postbox"><legend class="hndle"><span><?php _e('X Post'); ?></span></legend>
 			<div class="inside">
 				<p class="description"><?php _e('Configure how to transform service post body into alternate format, and/or set headers.', $P) ?></p>
 				<p class="description"><?php _e('Leave any field blank to ignore it.', $P) ?></p>
@@ -360,13 +374,13 @@ ENDFIELD;
 					<label for="<?php echo $field, '-', $eid ?>"><?php _e('Root Element(s)', $P); ?></label>
 					<input id="<?php echo $field, '-', $eid ?>" type="text" class="text" name="<?php echo $P, '[', $eid, '][', $field, ']'?>" value="<?php echo isset($entity[$field]) ? esc_attr($entity[$field]) : 'post'?>" />
 					<em class="description"><?php _e('Wrap contents of transformed posts with this root element.  You may specify more than one by separating names with forward-slash', $P);?> (<code>/</code>), e.g. <code>Root/Child1/Child2</code>.</em>
-					<em class="description"><?php _e('You may also enter xml prolog and/or xml, or a mask with placeholder <code>%s</code> for the body.', $P);?></em>
+					<em class="description"><?php echo sprintf(__('You may also enter xml prolog and/or xml, or a mask with placeholder %s for the body, or replacement placeholders like %s.', $P), '<code>%s</code>', '<code>{{3rdpartyToken}}</code>');?></em>
 				</div>
 				<?php $field = self::PARAM_HEADER; ?>
 				<div class="field">
 					<label for="<?php echo $field, '-', $eid ?>"><?php _e('Post Headers', $P); ?></label>
 					<input id="<?php echo $field, '-', $eid ?>" type="text" class="text" name="<?php echo $P, '[', $eid, '][', $field, ']'?>" value="<?php echo isset($entity[$field]) ? esc_attr($entity[$field]) : ''?>" />
-					<em class="description"><?php _e('Override the post headers for all posts.  You may specify more than one by providing in &quot;querystring&quot; format.  Allows shortcodes like <code>[base64]</code>', $P);?> (<code>Accept=json&amp;Content-Type=whatever&amp;Authorization=Basic [base64]user:pass[/base64]</code>).</em>
+					<em class="description"><?php echo sprintf(__('Override the post headers for all posts.  You may specify more than one by providing in &quot;querystring&quot; format.  Allows shortcodes like %s.  Example) %s.', $P), '<code>[base64]</code>', '<code>Accept=json&amp;Content-Type=whatever&amp;Authorization=Basic [base64]user:pass[/base64]</code>');?></em>
 				</div>
 				<?php $field = self::PARAM_AUTOCLOSE; ?>
 				<div class="field">
