@@ -111,6 +111,9 @@ __None available.__
 
 == Changelog ==
 
+= 1.4.1 =
+* fix constructor warning for PHP7
+
 = 1.4 =
 * new string replacement format using mustache-style token placeholders `{{3rdparty}}`
 
