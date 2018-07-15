@@ -5,7 +5,7 @@ Plugin Name: Forms-3rdparty Xml Post
 Plugin URI: https://github.com/zaus/forms-3rdparty-xpost
 Description: Converts submission from <a href="http://wordpress.org/plugins/forms-3rdparty-integration/">Forms 3rdparty Integration</a> to xml, json, add headers
 Author: zaus, leadlogic
-Version: 1.4.1
+Version: 1.4.2
 Author URI: http://drzaus.com
 Changelog:
 	0.1 init
@@ -20,6 +20,7 @@ Changelog:
 	1.3.2 fix: bug parsing existing xml root; allow shortcodes in root
 	1.4	replace style
 	1.4.1 fix php7 constructor warning
+	1.4.2 wrapper field is textarea for easier format usage
 */
 
 
@@ -373,7 +374,7 @@ ENDFIELD;
 				<?php $field = self::PARAM_WRAPPER; ?>
 				<div class="field">
 					<label for="<?php echo $field, '-', $eid ?>"><?php _e('Root Element(s)', $P); ?></label>
-					<input id="<?php echo $field, '-', $eid ?>" type="text" class="text" name="<?php echo $P, '[', $eid, '][', $field, ']'?>" value="<?php echo isset($entity[$field]) ? esc_attr($entity[$field]) : 'post'?>" />
+					<textarea id="<?php echo $field, '-', $eid ?>" class="text" name="<?php echo $P, '[', $eid, '][', $field, ']'?>"><?php echo isset($entity[$field]) ? esc_html($entity[$field]) : 'post'?></textarea>
 					<em class="description"><?php _e('Wrap contents of transformed posts with this root element.  You may specify more than one by separating names with forward-slash', $P);?> (<code>/</code>), e.g. <code>Root/Child1/Child2</code>.</em>
 					<em class="description"><?php echo sprintf(__('You may also enter xml prolog and/or xml, or a mask with placeholder %s for the body, or replacement placeholders like %s.', $P), '<code>%s</code>', '<code>{{3rdpartyToken}}</code>');?></em>
 				</div>

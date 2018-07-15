@@ -3,7 +3,7 @@ Contributors: zaus, leadlogic
 Donate link: http://drzaus.com/donate
 Tags: contact form, form, contact form 7, CF7, gravity forms, GF, CRM, mapping, 3rd-party service, services, remote request, xml, json, soap, xml webservice, soap webservice, json webservice, nested fields, xpost
 Requires at least: 3.0
-Tested up to: 4.6.1
+Tested up to: 4.9.6
 Stable tag: trunk
 License: GPLv2 or later
 
@@ -110,6 +110,9 @@ For 'Replace' format, repeating fields are not handled -- it essentially looks f
 __None available.__
 
 == Changelog ==
+
+= 1.4.2 =
+* wrapper field is textarea for easier format usage
 
 = 1.4.1 =
 * fix constructor warning for PHP7
