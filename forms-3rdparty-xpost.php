@@ -5,7 +5,7 @@ Plugin Name: Forms-3rdparty Xml Post
 Plugin URI: https://github.com/zaus/forms-3rdparty-xpost
 Description: Converts submission from <a href="http://wordpress.org/plugins/forms-3rdparty-integration/">Forms 3rdparty Integration</a> to xml, json, add headers
 Author: zaus, leadlogic
-Version: 1.4.2
+Version: 1.4.3
 Author URI: http://drzaus.com
 Changelog:
 	0.1 init
@@ -21,6 +21,7 @@ Changelog:
 	1.4	replace style
 	1.4.1 fix php7 constructor warning
 	1.4.2 wrapper field is textarea for easier format usage
+	1.4.3 supermask
 */
 
 
@@ -42,6 +43,7 @@ class Forms3rdpartyXpost {
 		
 		// register some shortcodes
 		if(! shortcode_exists('base64') ) add_shortcode( 'base64', array(&$this, 'sc_base64') );
+		if(! shortcode_exists('xpost-loop') ) add_shortcode( 'xpost-loop', array(&$this, 'sc_xpost_loop') );
 	}
 
 	const PARAM_HEADER = 'xpost-header';
@@ -52,6 +54,7 @@ class Forms3rdpartyXpost {
 
 	const FORMAT_MASK = 'mask';
 	const FORMAT_REPLACE = 'rpl';
+	const ADVANCED_REPLACE = 'rplsc';
 
 
 	public function post_args($args, $service, $form) {
@@ -79,7 +82,7 @@ class Forms3rdpartyXpost {
 		if(!isset($service[self::PARAM_ASXML])) return $args;
 		$format = $service[self::PARAM_ASXML];
 
-		### _log(__FUNCTION__ . '@' . __LINE__, $args['body'] );
+		### _log(__FUNCTION__ . '@' . __LINE__ . '::before', $args['body'] );
 		
 		// nest tags only if not masking or replacing
 		if($format == self::FORMAT_MASK) {
@@ -89,8 +92,7 @@ class Forms3rdpartyXpost {
 			$args['body'] = $this->nest($args['body']);
 		}
 
-		### _log(__FUNCTION__ . '@' . __LINE__, $args['body'] );
-
+		### _log(__FUNCTION__ . '@' . __LINE__ . '::after', $args['body'] );
 		
 		// do we have a custom wrapper?
 		if(isset($service[self::PARAM_WRAPPER]) && !empty($service[self::PARAM_WRAPPER]))
@@ -99,7 +101,7 @@ class Forms3rdpartyXpost {
 
 		// only rewrap if not masking AND not given xml
 		### _log('wrap-root', $root);
-		if(!empty($root) && ($root[0] != '<' && $format != self::FORMAT_MASK && $format != self::FORMAT_REPLACE)) {
+		if(!empty($root) && ($root[0] != '<' && $format != self::FORMAT_MASK && $format != self::FORMAT_REPLACE && $format != self::ADVANCED_REPLACE)) {
 			$wrapper = array_reverse( explode(self::PARAM_SEPARATOR, $root) );
 			// loop through wrapper to wrap
 			$root = array_pop($wrapper); // save terminal wrapper as root for xmlifying
@@ -117,6 +119,7 @@ class Forms3rdpartyXpost {
 			// don't wrap
 			case self::FORMAT_REPLACE:
 			case self::FORMAT_MASK:
+			case self::ADVANCED_REPLACE:
 			case 'xml':
 				break;
 			default:
@@ -153,12 +156,15 @@ class Forms3rdpartyXpost {
 			case self::FORMAT_MASK:
 				$args['body'] = sprintf($root ? $root : '%s', implode('', $args['body']));
 				break;
+			case self::ADVANCED_REPLACE:
+				// reformat special loop sections
+				$args['body'] = $this->advanced_replace_body($args['body'], $root);
+
+				### _log(__FUNCTION__, $format, $args['body']);
+				break;
 			case self::FORMAT_REPLACE:
 				### _log(__CLASS__ . '.' . __FUNCTION__ . '/'. $format, $args['body'], $service['mapping']);
-				$args['body'] = str_replace(
-					array_map(function($k) { return '{{' . $k . '}}'; }, array_keys($args['body']))
-					, array_values($args['body'])
-					, $root);
+				$args['body'] = $this->replace_body($args['body'], $root);
 				break;
 			case 'x-www-form-urlencoded':
 				$args['body'] = http_build_query($args['body']);
@@ -301,6 +307,55 @@ ENDFIELD;
 		return $payload;
 	}//--	fn	as_multipart
 
+	function mask_body($body, $wrapper) {
+		return str_replace(
+			array_map(function($k) { return '{{' . $k . '}}'; }, array_keys($body))
+			, array_values($body)
+			, $wrapper);
+	}
+	function replace_body($body, $wrapper, $prefix = '') {
+		### _log(__FUNCTION__ . '@' . __LINE__, $body, $wrapper, $prefix);
+
+		return str_replace(
+			array_map(function($k) use($prefix) { return '{{' . $prefix . $k . '}}'; }, array_keys($body))
+			, array_values($body)
+			, $wrapper);
+	}
+	function advanced_replace_body($body, $wrapper) {
+		// blah blah blah ##plc## something in between ##plc## more stuff afterwards
+		//                ^start ^start+plclen         ^end   ^end+plclen
+		foreach($body as $k => $v) {
+			### _log(__FUNCTION__, $k, $v, $wrapper);
+			
+			// regular token replacement
+			if(! is_array($v)) {
+				$wrapper = str_replace('{{' . $k . '}}', $v, $wrapper);
+				continue;
+			}
+
+			// check for shortcode loop placeholder
+			$plc = $this->loop_placeholder($k);
+			$start = strpos($wrapper, $plc);
+			// if no loop placeholder, regular token replacement for each array
+			if($start === false) {
+				$wrapper = $this->replace_body($v, $wrapper, $k);
+				continue;
+			}
+
+			$before = substr($wrapper, 0, $start);
+
+			$plclen = strlen($plc);
+			$start += $plclen; // skip the first placeholder, which will also correctly adjust the substr length
+			$end = strpos($wrapper, $plc, $start);
+			$loop = substr($wrapper, $start, $end - $start);
+
+			$after = substr($wrapper, $end + $plclen);
+
+			$wrapper = $before . implode('', array_map(function($sub) use($loop) { return $this->replace_body($sub, $loop); }, $v)) . $after;
+		}
+
+		return $wrapper;
+	}
 	#endregion -------- convert body -----------
 
 	
@@ -312,6 +367,21 @@ ENDFIELD;
 		$atts = shortcode_atts( array(), $atts, 'base64' );
 
 		return base64_encode($content . implode('', $atts));
+	}
+	function sc_xpost_loop( $atts, $content = '' ) {
+		$atts = shortcode_atts( array('on' => '', 'times' => 1), $atts, 'xpost-loop' );
+
+		### _log(__FUNCTION__, $atts, $content);
+
+		if(isset($atts['on'])) {
+			$plc = $this->loop_placeholder($atts['on']);
+			return "{$plc}$content{$plc}";
+		}
+
+		return str_repeat($content, $atts['times']);
+	}
+	function loop_placeholder($key) {
+		return "##{$key}##";
 	}
 	
 	#endregion -------- shortcode -----------
@@ -349,6 +419,7 @@ ENDFIELD;
 			'json' => 'JSON',
 			self::FORMAT_MASK => 'Format Mask',
 			self::FORMAT_REPLACE => 'Replace Placeholders',
+			self::ADVANCED_REPLACE => 'Advanced Placeholders',
 			'multipart' => 'Multipart', // github issue #6
 			'x-www-form-urlencoded' => 'URL' // this is really the same as 'form'...
 		);
@@ -397,7 +468,7 @@ ENDFIELD;
 
 
 
-}//---	class	Forms3partydynamic
+}//---	class	Forms3rdpartyXpost
 
 // engage!
 new Forms3rdpartyXpost();

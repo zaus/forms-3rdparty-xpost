@@ -108,17 +108,81 @@ To produce `<SomeTag></SomeTag>`, make sure the "Autoclose" option is unchecked.
 
 ### How do I completely customize the xml/wrappers/transform? ###
 
-Use the 'Mask' format, which allows you to specify the result exactly as you want via string replacement (`sprintf`), or the 'Replace' format which will replace string tokens (`{{3rdparty}}`).  Useful for complex XML.
+Use the 'Mask' format, which allows you to specify the result exactly as you want via string replacement (`sprintf`), or the 'Replace'/'Advanced Replace' format which will replace string tokens (`{{3rdparty}}`).  Useful for complex XML.
 
-The 'Root Element' field will now be treated as a string-replacement mask (a la `sprintf` for "Mask" or `str_replace` for "Replace"), so make sure to include the post body with the appropriate placeholder(s) (`%s` for "Mask", `{{3rdparty_Fields}}` for "Replace").
-For 'Mask' format, each '3rd-Party Field' will also be treated the same, using `%s` to indicate where the submission value should go.
-For 'Replace' format, repeating fields are not handled -- it essentially looks for instances of each "3rd-Party Field" column and replaces it with the corresponding input value.
+* The 'Root Element' field will now be treated as a string-replacement mask (a la `sprintf` for "Mask" or `str_replace` for "Replace"), so make sure to include the post body with the appropriate placeholder(s) (`%s` for "Mask", `{{3rdparty_Fields}}` for "Replace").
+* For 'Mask' format, each '3rd-Party Field' will also be treated the same, using `%s` to indicate where the submission value should go.
+* For 'Replace' format, repeating fields are not handled -- it essentially looks for instances of each "3rd-Party Field" column and replaces it with the corresponding input value.
+* For 'Advanced Replace' format, it works the same except that repeating fields are handled in one of two ways:
+    * Providing the shortcode `[xpost-loop on="repeatingFieldKey" times="a number"]loop content[/xpost-loop]` will repeat the `loop content` either _times_ or for each key in the array _repeatingFieldKey_ (which is your 3rdparty mapped field)
+	* otherwise it will suffix each repeating field key with its index and look for that as a placeholder (e.g. `myfield1`, `myfield2`, etc)
+
+### How do I use the Advanced Replace format? ###
+
+For the given mapping:
+
+    Source					3rdparty
+	------					--------
+	input_1					name
+	input_2					phone
+	input_3.1				files\%i\name
+	input_3.2				files\%i\name
+	input_3.3				files\%i\name
+	input_4.1				files\%i\content
+	input_4.2				files\%i\content
+	input_4.3				files\%i\content
+	input_5.1				files\%i\mime
+	input_5.2				files\%i\mime
+	input_5.3				files\%i\mime
+
+Normally the `input_3.*` fields would get grouped together, as would the `input_4.*` fields.  Using separator `[%]`, it will create a nested list like:
+
+    array(
+		'files' => array(
+			0 => array(
+				'name' => 'value of input_3.1',
+				'mime' => 'value of input_5.1',
+				'content' => 'value of input_4.1' ),
+			1 => array(
+				'name' => 'value of input_3.2',
+				'mime' => 'value of input_5.2',
+				'content' => 'value of input_4.2' ),
+			2 => array(
+				'name' => 'value of input_3.3',
+				'mime' => 'value of input_5.2',
+				'content' => 'value of input_4.3' ),
+	))
+
+With Advanced Replacement, you could set the "Root Elements" field to something like the following (which mimics a normal form upload):
+
+	--multipartboundaryPE6azq
+	Content-Disposition: form-data; name="myNameField"
+
+	{{name}}
+	--multipartboundaryPE6azq
+	Content-Disposition: form-data; name="myPhoneField"
+
+	{{phone}}
+	[xpost-loop on="files"]--multipartboundaryPE6azq
+	Content-Disposition: form-data; name="myUploadFiles"; filename="{{name}}"
+	Content-Type: {{mime}}
+
+	{{content}}
+	[/xpost-loop]
+
+Note the use of the shortcode `xpost-loop` which will repeat for each of the elements in the nested `files` array, replacing the placeholders accordingly.
+
+### 
 
 ## Screenshots ##
 
 __None available.__
 
 ## Changelog ##
+
+### 1.4.3 ###
+* added new "Advanced Replace" format which behaves the same as the existing mustache-style replacement but with `xpost-loop` shortcode
+* fix: cloning row clears textarea field too
 
 ### 1.4.2 ###
 * wrapper field is textarea for easier format usage
